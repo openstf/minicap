@@ -1,27 +1,35 @@
 LOCAL_PATH := $(call my-dir)
+
 include $(CLEAR_VARS)
 
-LOCAL_MODULE := minicap
+# Enable PIE manually. Will get reset on $(CLEAR_VARS).
+LOCAL_CFLAGS += -fPIE
+LOCAL_LDFLAGS += -fPIE -pie
 
-LOCAL_MODULE_TAGS := optional
+LOCAL_MODULE := minicap
 
 LOCAL_SRC_FILES := \
 	minicap.cpp \
 
-LOCAL_PRELINK_MODULE := false
+LOCAL_STATIC_LIBRARIES := \
+	libjpeg-turbo \
 
 LOCAL_SHARED_LIBRARIES := \
-	libcutils \
-	libutils \
-	libbinder \
-	libui \
+	minicap-shared \
 
-ifeq ($(PLATFORM_SDK_VERSION),10)
-LOCAL_SHARED_LIBRARIES += libsurfaceflinger_client
-else
-LOCAL_SHARED_LIBRARIES += libgui
-endif
+include $(BUILD_EXECUTABLE)
 
-LOCAL_CFLAGS += -DPLATFORM_SDK_VERSION=$(PLATFORM_SDK_VERSION)
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := minicap-nopie
+
+LOCAL_SRC_FILES := \
+	minicap.cpp \
+
+LOCAL_STATIC_LIBRARIES := \
+	libjpeg-turbo \
+
+LOCAL_SHARED_LIBRARIES := \
+	minicap-shared \
 
 include $(BUILD_EXECUTABLE)

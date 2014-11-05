@@ -10,7 +10,7 @@ rsync \
   --copy-links \
   --perms \
   --times \
-  -FF ./ "$BUILD_HOST":$TARGET
+  -FF ./jni/minicap-shared/aosp/ "$BUILD_HOST":$TARGET
 
 ssh -T "$BUILD_HOST" "docker run --rm \
   -a stdout -a stderr \
@@ -26,4 +26,4 @@ rsync \
   --copy-links \
   --perms \
   --times \
-  "$BUILD_HOST":$TARGET/libs/ libs/
+  "$BUILD_HOST":$TARGET/libs/ ./jni/minicap-shared/aosp/libs/

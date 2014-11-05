@@ -1,0 +1,2 @@
+# Ignore libjpeg-turbo-1.3.90's configured/made files. To actually add something, use -f.
+libjpeg-turbo-1.3.90

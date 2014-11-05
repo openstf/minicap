@@ -1,2 +1,5 @@
-.env
+/.env
 /libs/
+/obj/
+/libs/
+/build/
