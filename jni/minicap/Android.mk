@@ -13,6 +13,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_STATIC_LIBRARIES := \
 	libjpeg-turbo \
+	libwebsockets \
 
 LOCAL_SHARED_LIBRARIES := \
 	minicap-shared \
@@ -28,6 +29,7 @@ LOCAL_SRC_FILES := \
 
 LOCAL_STATIC_LIBRARIES := \
 	libjpeg-turbo \
+	libwebsockets \
 
 LOCAL_SHARED_LIBRARIES := \
 	minicap-shared \

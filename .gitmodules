@@ -1,0 +1,3 @@
+[submodule "libwebsockets"]
+	path = jni/vendor/libwebsockets/source
+	url = https://github.com/warmcat/libwebsockets.git
