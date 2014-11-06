@@ -192,8 +192,8 @@ main(int argc, char* argv[])
 
     for (;;)
     {
-      req_width = 540;
-      req_height = 960;
+      req_width = 0;
+      req_height = 0;
       req_q = 80;
 
       begin = clock();
