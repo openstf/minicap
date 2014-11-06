@@ -28,4 +28,7 @@ LOCAL_SRC_FILES := \
 	$(LWS_LIB_PATH)/parsers.c \
 	$(LWS_LIB_PATH)/sha-1.c \
 
+LOCAL_EXPORT_C_INCLUDES := \
+	$(LOCAL_PATH)/$(LWS_LIB_PATH) \
+
 include $(BUILD_STATIC_LIBRARY)
