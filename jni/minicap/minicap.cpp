@@ -115,13 +115,6 @@ main(int argc, char* argv[])
 
     D("Connection established\n");
 
-    char io_buffer[32] = {0};
-    int io_length = 0;
-    char* cursor;
-    long int req_width, req_height;
-    long int req_q;
-    unsigned long size;
-
     clock_t begin, end;
     double time_spent;
 
@@ -129,10 +122,13 @@ main(int argc, char* argv[])
     int subsampling = TJSAMP_420;
     int quality = 80;
     int format;
-    int max_width, max_height;
-    int max_q;
+    unsigned int max_width, max_height;
+    unsigned int max_q;
     unsigned long max_size;
     unsigned char* data;
+    unsigned int req_width, req_height;
+    unsigned int req_q;
+    unsigned long size;
     int ok;
 
     minicap_update(mchandle, 0, 0);
@@ -176,92 +172,78 @@ main(int argc, char* argv[])
 
     handle = tjInitCompress();
 
-    // Tell version
-    io_length = snprintf(io_buffer, sizeof(io_buffer), "v %d\n", VERSION);
-    write(client_fd, io_buffer, io_length);
+    char header_buffer[256] = {0};
+    int header_len;
+    char chunk_buffer[32] = {0};
+    int chunk_len;
+    char boundary[] = "gc0p4Jq0M2Yt08jU534c0p";
 
-    // Tell limits
-    io_length = snprintf(io_buffer, sizeof(io_buffer), "^ %d %d %d\n",
-      max_width, max_height, max_q);
-    write(client_fd, io_buffer, io_length);
+    header_len = snprintf(header_buffer, sizeof(header_buffer),
+      "HTTP/1.1 200 OK\r\n"
+      "Transfer-Encoding: chunked\r\n"
+      "Content-Type: multipart/x-mixed-replace;boundary=%s\r\n"
+      "Cache-Control: no-store,max-age=-1\r\n"
+      "Connection: keep-alive\r\n"
+      "\r\n",
+      boundary
+    );
+
+    write(client_fd, header_buffer, header_len);
 
     for (;;)
     {
-      io_length = 0;
+      req_width = 540;
+      req_height = 960;
+      req_q = 80;
 
-      while (io_length < sizeof(io_buffer) &&
-        read(client_fd, &io_buffer[io_length], 1) == 1)
+      begin = clock();
+
+      minicap_update(mchandle, req_width, req_height);
+
+      ok = tjCompress2(
+        handle,
+        (unsigned char*) minicap_get_pixels(mchandle),
+        minicap_get_width(mchandle),
+        minicap_get_stride(mchandle) * minicap_get_bpp(mchandle),
+        minicap_get_height(mchandle),
+        format,
+        &data,
+        &size,
+        subsampling,
+        req_q,
+        TJFLAG_FASTDCT | TJFLAG_NOREALLOC
+      );
+
+      if (ok != 0)
       {
-        if (io_buffer[io_length++] == '\n')
-        {
-          break;
-        }
+        fprintf(stderr, "Conversion failed\n");
+        exit(1);
       }
 
-      if (io_length <= 0)
-      {
-        break;
-      }
+      end = clock();
+      time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
 
-      if (io_buffer[io_length - 1] != '\n')
-      {
-        continue;
-      }
+      header_len = snprintf(header_buffer, sizeof(header_buffer),
+        "--%s\r\n"
+        "Content-Type: image/jpeg\r\n"
+        "Content-Length: %ld\r\n"
+        "\r\n",
+        boundary, size
+      );
 
-      if (io_length == 1)
-      {
-        continue;
-      }
+      chunk_len = snprintf(chunk_buffer, sizeof(chunk_buffer),
+        "%lx\r\n",
+        header_len + size
+      );
 
-      cursor = (char*) &io_buffer;
-      cursor += 1;
+      write(client_fd, chunk_buffer, chunk_len);
+      write(client_fd, header_buffer, header_len);
+      write(client_fd, data, size);
+      write(client_fd, "\r\n", 2);
 
-      switch (io_buffer[0])
-      {
-      case 'c': // CAPTURE
-        req_width = strtol(cursor, &cursor, 10);
-        req_height = strtol(cursor, &cursor, 10);
-        req_q = strtol(cursor, &cursor, 10);
+      D("Took %f seconds\n", time_spent);
 
-        begin = clock();
-
-        minicap_update(mchandle, req_width, req_height);
-
-        ok = tjCompress2(
-          handle,
-          (unsigned char*) minicap_get_pixels(mchandle),
-          minicap_get_width(mchandle),
-          minicap_get_stride(mchandle) * minicap_get_bpp(mchandle),
-          minicap_get_height(mchandle),
-          format,
-          &data,
-          &size,
-          subsampling,
-          req_q,
-          TJFLAG_FASTDCT | TJFLAG_NOREALLOC
-        );
-
-        if (ok != 0)
-        {
-          fprintf(stderr, "Conversion failed\n");
-          exit(1);
-        }
-
-        end = clock();
-        time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-
-        write(client_fd, &size, 4);
-
-        if (write(client_fd, data, size) != size)
-        {
-          fprintf(stderr, "Didn't write enough\n");
-        }
-
-        D("Took %f seconds\n", time_spent);
-        break;
-      default:
-        break;
-      }
+      usleep(100000);
     }
 
     D("Connection closed\n");
