@@ -44,8 +44,10 @@ public:
   broadcast_server() {
     // Initialize Asio Transport
     m_server.init_asio();
+    m_server.set_reuse_addr(true);
 
     // Register handler callbacks
+    m_server.set_socket_init_handler(bind(&broadcast_server::on_socket_init, this, ::_1, ::_2));
     m_server.set_open_handler(bind(&broadcast_server::on_open, this, ::_1));
     m_server.set_close_handler(bind(&broadcast_server::on_close, this, ::_1));
     m_server.set_message_handler(bind(&broadcast_server::on_message, this, ::_1, ::_2));
@@ -70,9 +72,13 @@ public:
     }
   }
 
+  void on_socket_init(connection_hdl, boost::asio::ip::tcp::socket &s) {
+    boost::asio::ip::tcp::no_delay option(true);
+    s.set_option(option);
+  }
+
   void on_open(connection_hdl hdl) {
     unique_lock<mutex> lock(m_action_lock);
-    //std::cout << "on_open" << std::endl;
     m_actions.push(action(SUBSCRIBE, hdl));
     lock.unlock();
     m_action_cond.notify_one();
@@ -80,7 +86,6 @@ public:
 
   void on_close(connection_hdl hdl) {
     unique_lock<mutex> lock(m_action_lock);
-    //std::cout << "on_close" << std::endl;
     m_actions.push(action(UNSUBSCRIBE, hdl));
     lock.unlock();
     m_action_cond.notify_one();
@@ -89,7 +94,6 @@ public:
   void on_message(connection_hdl hdl, server::message_ptr msg) {
     // queue message up for sending by processing thread
     unique_lock<mutex> lock(m_action_lock);
-    //std::cout << "on_message" << std::endl;
     m_actions.push(action(MESSAGE, hdl, msg));
     lock.unlock();
     m_action_cond.notify_one();
