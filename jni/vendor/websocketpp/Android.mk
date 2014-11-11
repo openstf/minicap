@@ -3,12 +3,12 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := websocketpp
 
+SOURCE_PATH := source
+
 LOCAL_SRC_FILES :=
 
-LOCAL_C_INCLUDES := $(JSON_SPIRIT_PATH)
-
 LOCAL_EXPORT_C_INCLUDES = \
-	$(LOCAL_PATH)/source \
+	$(LOCAL_PATH)/$(SOURCE_PATH) \
 
 LOCAL_STATIC_LIBRARIES := \
 	boost \

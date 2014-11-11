@@ -1,14 +1,19 @@
 LOCAL_PATH := $(call my-dir)
+include $(CLEAR_VARS)
 
-MY_SRC_FILES := \
+LOCAL_MODULE := minicap-common
+
+LOCAL_SRC_FILES := \
 	minicapws.cpp \
 
-MY_STATIC_LIBRARIES := \
+LOCAL_STATIC_LIBRARIES := \
 	libjpeg-turbo \
 	websocketpp \
 
-MY_SHARED_LIBRARIES := \
+LOCAL_SHARED_LIBRARIES := \
 	minicap-shared \
+
+include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
@@ -18,9 +23,7 @@ LOCAL_LDFLAGS += -fPIE -pie
 
 LOCAL_MODULE := minicap
 
-LOCAL_SRC_FILES := $(MY_SRC_FILES)
-LOCAL_STATIC_LIBRARIES := $(MY_STATIC_LIBRARIES)
-LOCAL_SHARED_LIBRARIES := $(MY_SHARED_LIBRARIES)
+LOCAL_STATIC_LIBRARIES := minicap-common
 
 include $(BUILD_EXECUTABLE)
 
@@ -28,8 +31,6 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := minicap-nopie
 
-LOCAL_SRC_FILES := $(MY_SRC_FILES)
-LOCAL_STATIC_LIBRARIES := $(MY_STATIC_LIBRARIES)
-LOCAL_SHARED_LIBRARIES := $(MY_SHARED_LIBRARIES)
+LOCAL_STATIC_LIBRARIES := minicap-common
 
 include $(BUILD_EXECUTABLE)
