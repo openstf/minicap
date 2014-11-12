@@ -24,6 +24,17 @@ APP_CFLAGS += \
 	-fprefetch-loop-arrays \
 	-DHAVE_NEON=1 \
 
+else ifeq ($(TARGET_ARCH_ABI),armeabi-v7a-hard)
+# http://community.arm.com/groups/tools/blog/2013/04/15/arm-cortex-a-processors-and-gcc-command-lines
+APP_CFLAGS += \
+	-mcpu=cortex-a9 \
+	-mfpu=neon-fp16 \
+	-mfloat-abi=hard \
+	-fprefetch-loop-arrays \
+	-DHAVE_NEON=1 \
+	-mhard-float \
+	-D_NDK_MATH_NO_SOFTFP=1 \
+
 else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
 # http://community.arm.com/groups/tools/blog/2013/04/15/arm-cortex-a-processors-and-gcc-command-lines
 APP_CFLAGS += \
