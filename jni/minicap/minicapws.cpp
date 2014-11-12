@@ -128,9 +128,21 @@ public:
         m_capster.capture(0, 0);
 
         con_list::iterator it;
-        for (it = m_connections.begin(); it != m_connections.end(); ++it) {
-          m_server.send(*it, m_capster.get_data(), m_capster.get_size(),
-            websocketpp::frame::opcode::BINARY);
+        try {
+          for (it = m_connections.begin(); it != m_connections.end(); ++it) {
+            m_server.send(*it, m_capster.get_data(), m_capster.get_size(),
+              websocketpp::frame::opcode::BINARY);
+          }
+        }
+        catch (websocketpp::exception& e) {
+          if (e.code() == websocketpp::error::bad_connection) {
+            // The connection doesn't exist anymore. We should get an
+            // UNSUBSCRIBE message later, so let's just ignore the
+            // exception here.
+          }
+          else {
+            std::cout << e.what() << std::endl;
+          }
         }
       } else {
         // undefined.
