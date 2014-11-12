@@ -72,7 +72,7 @@ main(int argc, char* argv[])
   int opt;
   int sfd, efd;
   struct sockaddr_un client_addr;
-  struct minicap* mchandle = minicap_create(0);
+  minicap* mc = minicap_create(0);
 
   while ((opt = getopt(argc, argv, "n:h")) != -1) {
     switch (opt) {
@@ -131,28 +131,28 @@ main(int argc, char* argv[])
     unsigned long size;
     int ok;
 
-    minicap_update(mchandle, 0, 0);
+    mc->update(0, 0);
 
-    max_width = minicap_get_width(mchandle) / 2;
-    max_height = minicap_get_height(mchandle) / 2;
+    max_width = mc->get_width();
+    max_height = mc->get_height();
     max_q = 100;
 
-    switch (minicap_get_format(mchandle))
+    switch (mc->get_format())
     {
-      case MINICAP_FORMAT_RGBA_8888:
+      case minicap::FORMAT_RGBA_8888:
         format = TJPF_RGBA;
         break;
-      case MINICAP_FORMAT_RGBX_8888:
+      case minicap::FORMAT_RGBX_8888:
         format = TJPF_RGBX;
         break;
-      case MINICAP_FORMAT_RGB_888:
+      case minicap::FORMAT_RGB_888:
         format = TJPF_RGB;
         break;
-      case MINICAP_FORMAT_BGRA_8888:
+      case minicap::FORMAT_BGRA_8888:
         format = TJPF_BGRA;
         break;
       default:
-        fprintf(stderr, "Unsupported pixel format (%d)\n", minicap_get_format(mchandle));
+        fprintf(stderr, "Unsupported pixel format (%d)\n", mc->get_format());
         return EXIT_FAILURE;
     }
 
@@ -198,14 +198,15 @@ main(int argc, char* argv[])
 
       begin = clock();
 
-      minicap_update(mchandle, req_width, req_height);
+      mc->release();
+      mc->update(req_width, req_height);
 
       ok = tjCompress2(
         handle,
-        (unsigned char*) minicap_get_pixels(mchandle),
-        minicap_get_width(mchandle),
-        minicap_get_stride(mchandle) * minicap_get_bpp(mchandle),
-        minicap_get_height(mchandle),
+        (unsigned char*) mc->get_pixels(),
+        mc->get_width(),
+        mc->get_stride() * mc->get_bpp(),
+        mc->get_height(),
         format,
         &data,
         &size,

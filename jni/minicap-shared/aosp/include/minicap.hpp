@@ -3,63 +3,63 @@
 
 #include <cstdint>
 
-#define MINICAP_FORMAT_NONE          0x01
-#define MINICAP_FORMAT_CUSTOM        0x02
-#define MINICAP_FORMAT_TRANSLUCENT   0x03
-#define MINICAP_FORMAT_TRANSPARENT   0x04
-#define MINICAP_FORMAT_OPAQUE        0x05
-#define MINICAP_FORMAT_RGBA_8888     0x06
-#define MINICAP_FORMAT_RGBX_8888     0x07
-#define MINICAP_FORMAT_RGB_888       0x08
-#define MINICAP_FORMAT_RGB_565       0x09
-#define MINICAP_FORMAT_BGRA_8888     0x0a
-#define MINICAP_FORMAT_RGBA_5551     0x0b
-#define MINICAP_FORMAT_RGBA_4444     0x0c
-#define MINICAP_FORMAT_UNKNOWN       0x00
-
-struct minicap
+class minicap
 {
-  int32_t display_id;
-  void *internal;
+public:
+  enum format {
+    FORMAT_NONE          = 0x01,
+    FORMAT_CUSTOM        = 0x02,
+    FORMAT_TRANSLUCENT   = 0x03,
+    FORMAT_TRANSPARENT   = 0x04,
+    FORMAT_OPAQUE        = 0x05,
+    FORMAT_RGBA_8888     = 0x06,
+    FORMAT_RGBX_8888     = 0x07,
+    FORMAT_RGB_888       = 0x08,
+    FORMAT_RGB_565       = 0x09,
+    FORMAT_BGRA_8888     = 0x0a,
+    FORMAT_RGBA_5551     = 0x0b,
+    FORMAT_RGBA_4444     = 0x0c,
+    FORMAT_UNKNOWN       = 0x00,
+  };
+
+  virtual
+  ~minicap() {}
+
+  virtual int
+  update(uint32_t width, uint32_t height) = 0;
+
+  virtual void
+  release() = 0;
+
+  virtual void const*
+  get_pixels() = 0;
+
+  virtual uint32_t
+  get_width() = 0;
+
+  virtual uint32_t
+  get_height() = 0;
+
+  virtual uint32_t
+  get_stride() = 0;
+
+  virtual uint32_t
+  get_bpp() = 0;
+
+  virtual size_t
+  get_size() = 0;
+
+  virtual format
+  get_format() = 0;
+
+  virtual int32_t
+  get_display_id() = 0;
+
+  virtual void
+  get_display_info() = 0;
 };
 
-struct minicap*
+minicap*
 minicap_create(int32_t display_id);
-
-int
-minicap_update(struct minicap *handle, uint32_t width, uint32_t height);
-
-void
-minicap_release(struct minicap *handle);
-
-void const*
-minicap_get_pixels(struct minicap *handle);
-
-uint32_t
-minicap_get_width(struct minicap *handle);
-
-uint32_t
-minicap_get_height(struct minicap *handle);
-
-uint32_t
-minicap_get_stride(struct minicap *handle);
-
-uint32_t
-minicap_get_bpp(struct minicap *handle);
-
-size_t
-minicap_get_size(struct minicap *handle);
-
-int
-minicap_get_format(struct minicap *handle);
-
-int32_t
-minicap_get_display_id(struct minicap *handle);
-
-void
-minicap_get_display_info(struct minicap *handle);
-
-void
-minicap_free(struct minicap *handle);
 
 #endif
