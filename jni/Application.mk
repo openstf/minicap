@@ -35,6 +35,8 @@ APP_CFLAGS += \
 	-mhard-float \
 	-D_NDK_MATH_NO_SOFTFP=1 \
 
+APP_LDFLAGS += -lm_hard
+
 else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
 # http://community.arm.com/groups/tools/blog/2013/04/15/arm-cortex-a-processors-and-gcc-command-lines
 APP_CFLAGS += \
