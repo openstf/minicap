@@ -104,7 +104,7 @@ main(int argc, char* argv[])
 
   for (;;)
   {
-    int len = sizeof(client_addr);
+    socklen_t len = sizeof(client_addr);
     int client_fd = accept(sfd, (struct sockaddr *) &client_addr, &len);
 
     if (client_fd < 0)
