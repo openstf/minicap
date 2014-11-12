@@ -4,7 +4,8 @@ include $(CLEAR_VARS)
 LOCAL_MODULE := minicap-common
 
 LOCAL_SRC_FILES := \
-	minicap.cpp \
+	util/capster.cpp \
+	minicapws.cpp \
 
 LOCAL_STATIC_LIBRARIES := \
 	libjpeg-turbo \

@@ -1,10 +1,11 @@
-#include <websocketpp/config/asio_no_tls.hpp>
+#include <iostream>
+#include <stdexcept>
 
+#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/common/thread.hpp>
 #include <websocketpp/server.hpp>
 
-#include <iostream>
-
-#include <websocketpp/common/thread.hpp>
+#include "util/capster.hpp"
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -41,7 +42,10 @@ struct action {
 
 class broadcast_server {
 public:
-  broadcast_server() {
+  broadcast_server() : m_capster(0) {
+    // Don't log
+    m_server.set_access_channels(websocketpp::log::alevel::none);
+
     // Initialize Asio Transport
     m_server.init_asio();
     m_server.set_reuse_addr(true);
@@ -121,9 +125,12 @@ public:
       } else if (a.type == MESSAGE) {
         unique_lock<mutex> con_lock(m_connection_lock);
 
+        m_capster.capture(0, 0);
+
         con_list::iterator it;
         for (it = m_connections.begin(); it != m_connections.end(); ++it) {
-          m_server.send(*it, a.msg);
+          m_server.send(*it, m_capster.get_data(), m_capster.get_size(),
+            websocketpp::frame::opcode::BINARY);
         }
       } else {
         // undefined.
@@ -141,6 +148,8 @@ private:
   mutex m_action_lock;
   mutex m_connection_lock;
   condition_variable m_action_cond;
+
+  capster m_capster;
 };
 
 int main() {
