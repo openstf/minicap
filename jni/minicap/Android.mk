@@ -5,7 +5,7 @@ LOCAL_MODULE := minicap-common
 
 LOCAL_SRC_FILES := \
 	util/capster.cpp \
-	minicapws.cpp \
+	minicap.cpp \
 
 LOCAL_STATIC_LIBRARIES := \
 	libjpeg-turbo \
