@@ -1,8 +1,15 @@
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
+
+#include <json_spirit.h>
+
+#ifndef JSON_SPIRIT_MVALUE_ENABLED
+#error Please define JSON_SPIRIT_MVALUE_ENABLED for the mValue type to be enabled
+#endif
 
 #include "util/capster.hpp"
 
@@ -12,6 +19,16 @@ using websocketpp::connection_hdl;
 using websocketpp::lib::placeholders::_1;
 using websocketpp::lib::placeholders::_2;
 using websocketpp::lib::bind;
+
+const json_spirit::mValue& find_value(const json_spirit::mObject& obj, const std::string& name)
+{
+    json_spirit::mObject::const_iterator i = obj.find(name);
+
+    assert(i != obj.end());
+    assert(i->first == name);
+
+    return i->second;
+}
 
 class capster_server {
 public:
@@ -53,20 +70,35 @@ public:
   }
 
   void on_message(connection_hdl hdl, server::message_ptr msg) {
-    m_capster.capture(0, 0);
+    std::istringstream in(msg->get_payload());
 
-    try {
-      m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
-        websocketpp::frame::opcode::BINARY);
-    }
-    catch (websocketpp::exception& e) {
-      if (e.code() == websocketpp::error::bad_connection) {
-        // The connection doesn't exist anymore. We should get an
-        // UNSUBSCRIBE message later, so let's just ignore the
-        // exception here.
+    json_spirit::mValue value;
+
+    read(in, value);
+
+    const json_spirit::mObject& root = value.get_obj();
+
+    std::string op = find_value(root, "op").get_str();
+
+    if (op.compare("jpeg") == 0) {
+      unsigned int width, height;
+
+      width = find_value(root, "w").get_int();
+      height = find_value(root, "h").get_int();
+
+      m_capster.capture(width, height);
+
+      try {
+        m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
+          websocketpp::frame::opcode::BINARY);
       }
-      else {
-        std::cout << e.what() << std::endl;
+      catch (websocketpp::exception& e) {
+        if (e.code() == websocketpp::error::bad_connection) {
+          // The connection doesn't exist anymore.
+        }
+        else {
+          std::cout << e.what() << std::endl;
+        }
       }
     }
   }

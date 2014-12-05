@@ -42,7 +42,7 @@ capster::capture(unsigned int width, unsigned int height) {
   unsigned long size;
 
   m_minicap->release();
-  m_minicap->update(m_max_width, m_max_height);
+  m_minicap->update(width, height);
 
   ok = tjCompress2(
     m_tjhandle,
