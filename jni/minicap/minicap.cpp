@@ -1,3 +1,5 @@
+#include <getopt.h>
+
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -13,12 +15,26 @@
 
 #include "util/capster.hpp"
 
+#define DEFAULT_DISPLAY_ID 0
+#define DEFAULT_WEBSOCKET_PORT 9002
+
 typedef websocketpp::server<websocketpp::config::asio> server;
 
 using websocketpp::connection_hdl;
 using websocketpp::lib::placeholders::_1;
 using websocketpp::lib::placeholders::_2;
 using websocketpp::lib::bind;
+
+static void usage(const char* pname)
+{
+  fprintf(stderr,
+    "Usage: %s [-h] [-d <display>] [-p <port>]\n"
+    "  -d <display>:  Display ID. (%d)\n"
+    "  -p <port>:     WebSocket server port. (%d)\n"
+    "  -h:            Show help.\n",
+    pname, DEFAULT_DISPLAY_ID, DEFAULT_WEBSOCKET_PORT
+  );
+}
 
 const json_spirit::mValue& find_value(const json_spirit::mObject& obj, const std::string& name)
 {
@@ -32,7 +48,7 @@ const json_spirit::mValue& find_value(const json_spirit::mObject& obj, const std
 
 class capster_server {
 public:
-  capster_server() : m_capster(0) {
+  capster_server(uint32_t display_id) : m_capster(display_id) {
     // Don't log
     m_server.set_access_channels(websocketpp::log::alevel::none);
 
@@ -108,12 +124,34 @@ private:
   capster m_capster;
 };
 
-int main() {
+int main(int argc, char* argv[]) {
+  const char* pname = argv[0];
+  uint32_t display_id = DEFAULT_DISPLAY_ID;
+  uint16_t port = DEFAULT_WEBSOCKET_PORT;
+
+  int opt;
+  while ((opt = getopt(argc, argv, "d:p:h")) != -1) {
+    switch (opt) {
+      case 'd':
+        display_id = atoi(optarg);
+        break;
+      case 'p':
+        port = atoi(optarg);
+        break;
+      case '?':
+        usage(pname);
+        return EXIT_FAILURE;
+      case 'h':
+        usage(pname);
+        return EXIT_SUCCESS;
+    }
+  }
+
   try {
-    capster_server server_instance;
+    capster_server server_instance(display_id);
 
     // Run the asio loop with the main thread
-    server_instance.run(9002);
+    server_instance.run(port);
 
   } catch (std::exception & e) {
     std::cout << e.what() << std::endl;
