@@ -8,6 +8,18 @@
 
 class capster {
 public:
+  class display_info {
+  public:
+    uint32_t width;
+    uint32_t height;
+    float xdpi;
+    float ydpi;
+    float size;
+  };
+
+  static display_info
+  get_display_info(uint32_t display_id);
+
   capster(uint32_t display_id);
 
   int

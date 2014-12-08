@@ -1,6 +1,46 @@
+#include <errno.h>
+#include <fcntl.h>
+#include <linux/fb.h>
+#include <stdio.h>
+
+#include <cmath>
 #include <stdexcept>
+#include <sstream>
 
 #include "capster.hpp"
+#include "formatter.hpp"
+
+capster::display_info capster::get_display_info(uint32_t display_id) {
+  display_info info;
+
+  char path[64];
+  sprintf(path, "/dev/graphics/fb%d", display_id);
+
+  int fd = open(path, O_RDONLY);
+
+  if (fd < 0) {
+    throw std::runtime_error(formatter() << "Cannot open " << path << ": " << strerror(errno));
+  }
+
+  fb_var_screeninfo vinfo;
+
+  if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0) {
+    close(fd);
+    throw std::runtime_error(formatter() << "Cannot get FBIOGET_VSCREENINFO of " << path << ": " << strerror(errno));
+  }
+
+  info.width = vinfo.xres;
+  info.height = vinfo.yres;
+  info.xdpi = static_cast<float>(vinfo.xres) / static_cast<float>(vinfo.width) * 25.4;
+  info.ydpi = static_cast<float>(vinfo.yres) / static_cast<float>(vinfo.height) * 25.4;
+  info.size = std::sqrt(
+    (static_cast<float>(vinfo.width) * static_cast<float>(vinfo.width)) +
+    (static_cast<float>(vinfo.height) * static_cast<float>(vinfo.height))) / 25.4;
+
+  close(fd);
+
+  return info;
+}
 
 capster::capster(uint32_t display_id)
   : m_tjhandle(tjInitCompress()),

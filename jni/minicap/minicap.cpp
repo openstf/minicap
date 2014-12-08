@@ -28,9 +28,10 @@ using websocketpp::lib::bind;
 static void usage(const char* pname)
 {
   fprintf(stderr,
-    "Usage: %s [-h] [-d <display>] [-p <port>]\n"
+    "Usage: %s [-h] [-d <display>] [-i] [-p <port>]\n"
     "  -d <display>:  Display ID. (%d)\n"
     "  -p <port>:     WebSocket server port. (%d)\n"
+    "  -i:            Get display information in JSON format.\n"
     "  -h:            Show help.\n",
     pname, DEFAULT_DISPLAY_ID, DEFAULT_WEBSOCKET_PORT
   );
@@ -128,15 +129,19 @@ int main(int argc, char* argv[]) {
   const char* pname = argv[0];
   uint32_t display_id = DEFAULT_DISPLAY_ID;
   uint16_t port = DEFAULT_WEBSOCKET_PORT;
+  bool show_info = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:p:h")) != -1) {
+  while ((opt = getopt(argc, argv, "d:p:ih")) != -1) {
     switch (opt) {
       case 'd':
         display_id = atoi(optarg);
         break;
       case 'p':
         port = atoi(optarg);
+        break;
+      case 'i':
+        show_info = true;
         break;
       case '?':
         usage(pname);
@@ -147,13 +152,39 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  if (show_info) {
+    try {
+      capster::display_info info = capster::get_display_info(display_id);
+
+      json_spirit::Object json;
+      json.push_back(json_spirit::Pair("id", static_cast<int>(display_id)));
+      json.push_back(json_spirit::Pair("width", static_cast<int>(info.width)));
+      json.push_back(json_spirit::Pair("height", static_cast<int>(info.height)));
+      json.push_back(json_spirit::Pair("xdpi", static_cast<double>(info.xdpi)));
+      json.push_back(json_spirit::Pair("xdpi", static_cast<double>(info.xdpi)));
+      json.push_back(json_spirit::Pair("size", static_cast<double>(info.size)));
+
+      std::cout << json_spirit::write(json,
+        json_spirit::remove_trailing_zeros | json_spirit::pretty_print);
+
+      return EXIT_SUCCESS;
+    }
+    catch (std::exception & e) {
+      std::cerr << "ERROR: " << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
   try {
     capster_server server_instance(display_id);
 
     // Run the asio loop with the main thread
     server_instance.run(port);
 
-  } catch (std::exception & e) {
-    std::cout << e.what() << std::endl;
+    return EXIT_SUCCESS;
+  }
+  catch (std::exception & e) {
+    std::cout << "ERROR: " << e.what() << std::endl;
+    return EXIT_FAILURE;
   }
 }
