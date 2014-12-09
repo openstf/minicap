@@ -161,7 +161,7 @@ int main(int argc, char* argv[]) {
       json.push_back(json_spirit::Pair("width", static_cast<int>(info.width)));
       json.push_back(json_spirit::Pair("height", static_cast<int>(info.height)));
       json.push_back(json_spirit::Pair("xdpi", static_cast<double>(info.xdpi)));
-      json.push_back(json_spirit::Pair("xdpi", static_cast<double>(info.xdpi)));
+      json.push_back(json_spirit::Pair("ydpi", static_cast<double>(info.ydpi)));
       json.push_back(json_spirit::Pair("size", static_cast<double>(info.size)));
 
       std::cout << json_spirit::write(json,
