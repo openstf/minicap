@@ -36,6 +36,9 @@ capster::display_info capster::get_display_info(uint32_t display_id) {
   info.size = std::sqrt(
     (static_cast<float>(vinfo.width) * static_cast<float>(vinfo.width)) +
     (static_cast<float>(vinfo.height) * static_cast<float>(vinfo.height))) / 25.4;
+  info.density = std::sqrt(
+    (static_cast<float>(vinfo.xres) * static_cast<float>(vinfo.xres)) +
+    (static_cast<float>(vinfo.yres) * static_cast<float>(vinfo.yres))) / info.size;
 
   close(fd);
 

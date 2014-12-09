@@ -15,6 +15,7 @@ public:
     float xdpi;
     float ydpi;
     float size;
+    float density;
   };
 
   static display_info
