@@ -106,8 +106,10 @@ public:
       width = find_value(root, "w").get_int();
       height = find_value(root, "h").get_int();
 
+      m_capster.set_desired_size(width, height);
+
       try {
-        if (m_capster.update(width, height) != 0) {
+        if (m_capster.update() != 0) {
           m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
         }
         else {

@@ -27,7 +27,7 @@ public:
   initial_update();
 
   int
-  update(unsigned int width, unsigned int height);
+  update();
 
   int
   convert();
@@ -37,6 +37,9 @@ public:
 
   unsigned char*
   get_data();
+
+  void
+  set_desired_size(unsigned int width, unsigned int height);
 
 private:
   int
@@ -52,6 +55,8 @@ private:
   unsigned int m_max_quality;
   unsigned char* m_data;
   unsigned long m_data_size;
+  unsigned int m_desired_width;
+  unsigned int m_desired_height;
 };
 
 #endif

@@ -51,7 +51,9 @@ capster::capster(uint32_t display_id)
     m_subsampling(TJSAMP_420),
     m_quality(80),
     m_max_quality(100),
-    m_data(NULL)
+    m_data(NULL),
+    m_desired_width(0),
+    m_desired_height(0)
 {
 }
 
@@ -88,17 +90,15 @@ capster::initial_update() {
 }
 
 int
-capster::update(unsigned int width, unsigned int height) {
+capster::update() {
   if (m_max_width == 0 && initial_update() != 0) {
     return 1;
   }
 
   m_minicap->release();
 
-  if (width > m_max_width || height > m_max_height) {
-    width = m_max_width;
-    height = m_max_height;
-  }
+  int width = m_desired_width > m_max_width ? m_max_width : m_desired_width;
+  int height = m_desired_height > m_max_height ? m_max_height : m_desired_height;
 
   return m_minicap->update(width, height);
 }
@@ -128,6 +128,12 @@ capster::get_size() {
 unsigned char*
 capster::get_data() {
   return m_data;
+}
+
+void
+capster::set_desired_size(unsigned int width, unsigned int height) {
+  m_desired_width = width;
+  m_desired_height = height;
 }
 
 int
