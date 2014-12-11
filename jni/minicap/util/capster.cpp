@@ -53,7 +53,13 @@ capster::capster(uint32_t display_id)
     m_max_quality(100),
     m_data(NULL)
 {
-  m_minicap->update(0, 0);
+}
+
+int
+capster::initial_update() {
+  if (m_minicap->update(0, 0) != 0) {
+    return 1;
+  }
 
   m_max_width = m_minicap->get_width();
   m_max_height = m_minicap->get_height();
@@ -76,18 +82,30 @@ capster::capster(uint32_t display_id)
     break;
   }
 
-  reserve_data();
+  if (reserve_data() != 0) {
+    return 2;
+  }
 }
 
 int
-capster::capture(unsigned int width, unsigned int height) {
-  int ok;
-  unsigned long size;
+capster::update(unsigned int width, unsigned int height) {
+  if (m_max_width == 0 && initial_update() != 0) {
+    return 1;
+  }
 
   m_minicap->release();
-  m_minicap->update(width, height);
 
-  ok = tjCompress2(
+  if (width > m_max_width || height > m_max_height) {
+    width = m_max_width;
+    height = m_max_height;
+  }
+
+  return m_minicap->update(width, height);
+}
+
+int
+capster::convert() {
+  return tjCompress2(
     m_tjhandle,
     (unsigned char*) m_minicap->get_pixels(),
     m_minicap->get_width(),
@@ -100,10 +118,6 @@ capster::capture(unsigned int width, unsigned int height) {
     m_quality,
     TJFLAG_FASTDCT | TJFLAG_NOREALLOC
   );
-
-  if (ok != 0) {
-    throw std::runtime_error("Conversion failed");
-  }
 }
 
 int
@@ -116,7 +130,7 @@ capster::get_data() {
   return m_data;
 }
 
-void
+int
 capster::reserve_data() {
   unsigned long max_size;
 
@@ -129,4 +143,6 @@ capster::reserve_data() {
   );
 
   m_data = tjAlloc(max_size);
+
+  return m_data == NULL ? 1 : 0;
 }

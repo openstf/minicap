@@ -24,7 +24,13 @@ public:
   capster(uint32_t display_id);
 
   int
-  capture(unsigned int width, unsigned int height);
+  initial_update();
+
+  int
+  update(unsigned int width, unsigned int height);
+
+  int
+  convert();
 
   int
   get_size();
@@ -33,7 +39,7 @@ public:
   get_data();
 
 private:
-  void
+  int
   reserve_data();
 
   tjhandle m_tjhandle;

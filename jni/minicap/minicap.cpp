@@ -28,10 +28,11 @@ using websocketpp::lib::bind;
 static void usage(const char* pname)
 {
   fprintf(stderr,
-    "Usage: %s [-h] [-d <display>] [-i] [-p <port>]\n"
+    "Usage: %s [-h] [-d <display>] [-i] [-s] [-p <port>]\n"
     "  -d <display>:  Display ID. (%d)\n"
     "  -p <port>:     WebSocket server port. (%d)\n"
     "  -i:            Get display information in JSON format.\n"
+    "  -s:            Take a screenshot and output it to stdout.\n"
     "  -h:            Show help.\n",
     pname, DEFAULT_DISPLAY_ID, DEFAULT_WEBSOCKET_PORT
   );
@@ -50,6 +51,8 @@ const json_spirit::mValue& find_value(const json_spirit::mObject& obj, const std
 class capster_server {
 public:
   capster_server(uint32_t display_id) : m_capster(display_id) {
+    m_capster.initial_update();
+
     // Don't log
     m_server.set_access_channels(websocketpp::log::alevel::none);
 
@@ -103,11 +106,15 @@ public:
       width = find_value(root, "w").get_int();
       height = find_value(root, "h").get_int();
 
-      m_capster.capture(width, height);
-
       try {
-        m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
-          websocketpp::frame::opcode::BINARY);
+        if (m_capster.update(width, height) != 0) {
+          m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
+        }
+        else {
+          m_capster.convert();
+          m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
+            websocketpp::frame::opcode::BINARY);
+        }
       }
       catch (websocketpp::exception& e) {
         if (e.code() == websocketpp::error::bad_connection) {
@@ -130,9 +137,10 @@ int main(int argc, char* argv[]) {
   uint32_t display_id = DEFAULT_DISPLAY_ID;
   uint16_t port = DEFAULT_WEBSOCKET_PORT;
   bool show_info = false;
+  bool take_screenshot = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:p:ih")) != -1) {
+  while ((opt = getopt(argc, argv, "d:p:ish")) != -1) {
     switch (opt) {
       case 'd':
         display_id = atoi(optarg);
@@ -142,6 +150,10 @@ int main(int argc, char* argv[]) {
         break;
       case 'i':
         show_info = true;
+        break;
+        break;
+      case 's':
+        take_screenshot = true;
         break;
       case '?':
         usage(pname);
@@ -167,6 +179,26 @@ int main(int argc, char* argv[]) {
 
       std::cout << json_spirit::write(json,
         json_spirit::remove_trailing_zeros | json_spirit::pretty_print);
+
+      return EXIT_SUCCESS;
+    }
+    catch (std::exception & e) {
+      std::cerr << "ERROR: " << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (take_screenshot) {
+    try {
+      capster capster_instance(display_id);
+
+      if (capster_instance.initial_update() != 0) {
+        throw std::runtime_error("Unable to access screen");
+      }
+
+      capster_instance.convert();
+
+      write(STDOUT_FILENO, capster_instance.get_data(), capster_instance.get_size());
 
       return EXIT_SUCCESS;
     }
