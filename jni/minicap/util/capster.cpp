@@ -55,8 +55,8 @@ capster::capster(uint32_t display_id)
 {
   m_minicap->update(0, 0);
 
-  m_max_width = m_minicap->get_width() / 4;
-  m_max_height = m_minicap->get_height() / 4;
+  m_max_width = m_minicap->get_width();
+  m_max_height = m_minicap->get_height();
 
   switch (m_minicap->get_format()) {
   case minicap::FORMAT_RGBA_8888:
