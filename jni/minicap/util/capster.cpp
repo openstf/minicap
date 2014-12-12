@@ -97,8 +97,6 @@ capster::update() {
     return 1;
   }
 
-  m_minicap->release();
-
   int width = m_desired_width > m_max_width ? m_max_width : m_desired_width;
   int height = m_desired_height > m_max_height ? m_max_height : m_desired_height;
 

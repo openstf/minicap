@@ -10,13 +10,10 @@
 #include <binder/IServiceManager.h>
 #include <binder/IMemory.h>
 
-#if PLATFORM_SDK_VERSION >= 16
 #include <gui/ISurfaceComposer.h>
 #include <gui/SurfaceComposerClient.h>
-#else
-#include <surfaceflinger/ISurfaceComposer.h>
-#include <surfaceflinger/SurfaceComposerClient.h>
-#endif
+
+#include <private/gui/ComposerService.h>
 
 #include <ui/PixelFormat.h>
 
@@ -27,22 +24,25 @@ class minicap_impl: public minicap
 public:
   minicap_impl(int32_t display_id)
     : m_display_id(display_id),
-      m_screenshot()
+      m_composer(ComposerService::getComposerService()),
+      m_width(0),
+      m_height(0),
+      m_format(PIXEL_FORMAT_NONE)
   {
+  }
+
+  virtual
+  ~minicap_impl()
+  {
+    release();
   }
 
   virtual int
   update(uint32_t width, uint32_t height)
   {
-    #if PLATFORM_SDK_VERSION >= 21
-    sp<IBinder> display = SurfaceComposerClient::getBuiltInDisplay(m_display_id);
-    int32_t err = m_screenshot.update(display, Rect(), width, height, false);
-    #elif PLATFORM_SDK_VERSION >= 17
-    sp<IBinder> display = SurfaceComposerClient::getBuiltInDisplay(m_display_id);
-    int32_t err = m_screenshot.update(display, width, height);
-    #else
-    int32_t err = m_screenshot.update(width, height);
-    #endif
+    m_heap = NULL;
+    int32_t err = m_composer->captureScreen(m_display_id, &m_heap,
+      &m_width, &m_height, &m_format, width, height, 0, -1UL);
 
     if (err != NO_ERROR)
     {
@@ -57,49 +57,49 @@ public:
   virtual void
   release()
   {
-    m_screenshot.release();
+    m_heap = NULL;
   }
 
   virtual void const*
   get_pixels()
   {
-    return m_screenshot.getPixels();
+    return m_heap->getBase();
   }
 
   virtual uint32_t
   get_width()
   {
-    return m_screenshot.getWidth();
+    return m_width;
   }
 
   virtual uint32_t
   get_height()
   {
-    return m_screenshot.getHeight();
+    return m_height;
   }
 
   virtual uint32_t
   get_stride()
   {
-    return m_screenshot.getStride();
+    return m_width;
   }
 
   virtual uint32_t
   get_bpp()
   {
-    return bytesPerPixel(m_screenshot.getFormat());
+    return bytesPerPixel(m_format);
   }
 
   virtual size_t
   get_size()
   {
-    return m_screenshot.getSize();
+    return m_heap->getSize();
   }
 
   virtual format
   get_format()
   {
-    switch (m_screenshot.getFormat())
+    switch (m_format)
     {
     case PIXEL_FORMAT_NONE:
       return FORMAT_NONE;
@@ -144,7 +144,11 @@ public:
 
 private:
   int32_t m_display_id;
-  ScreenshotClient m_screenshot;
+  sp<ISurfaceComposer> m_composer;
+  sp<IMemoryHeap> m_heap;
+  uint32_t m_width;
+  uint32_t m_height;
+  PixelFormat m_format;
 
   const char*
   error_name(int32_t err)
@@ -185,10 +189,8 @@ private:
       return "TIMED_OUT";
     case android::UNKNOWN_TRANSACTION:
       return "UNKNOWN_TRANSACTION";
-    #if PLATFORM_SDK_VERSION >= 14
     case android::FDS_NOT_ALLOWED:
       return "FDS_NOT_ALLOWED";
-    #endif
     default:
       return "UNMAPPED_ERROR";
     }
