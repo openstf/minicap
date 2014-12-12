@@ -135,6 +135,8 @@ private:
 };
 
 int main(int argc, char* argv[]) {
+  minicap_start_thread_pool();
+
   const char* pname = argv[0];
   uint32_t display_id = DEFAULT_DISPLAY_ID;
   uint16_t port = DEFAULT_WEBSOCKET_PORT;

@@ -27,10 +27,8 @@ class minicap_impl: public minicap
 public:
   minicap_impl(int32_t display_id)
     : m_display_id(display_id),
-      m_self(ProcessState::self()),
       m_screenshot()
   {
-    m_self->startThreadPool();
   }
 
   virtual int
@@ -146,7 +144,6 @@ public:
 
 private:
   int32_t m_display_id;
-  sp<ProcessState> m_self;
   ScreenshotClient m_screenshot;
 
   const char*
@@ -202,4 +199,10 @@ minicap*
 minicap_create(int32_t display_id)
 {
   return new minicap_impl(display_id);
+}
+
+void
+minicap_start_thread_pool()
+{
+  ProcessState::self()->startThreadPool();
 }

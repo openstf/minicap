@@ -8,3 +8,8 @@ minicap_create(int32_t display_id)
 {
   return NULL;
 }
+
+void
+minicap_start_thread_pool()
+{
+}
