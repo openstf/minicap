@@ -87,6 +87,8 @@ capster::initial_update() {
   if (reserve_data() != 0) {
     return 2;
   }
+
+  return 0;
 }
 
 int
