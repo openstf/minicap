@@ -180,6 +180,7 @@ int main(int argc, char* argv[]) {
       json.push_back(json_spirit::Pair("ydpi", static_cast<double>(info.ydpi)));
       json.push_back(json_spirit::Pair("size", static_cast<double>(info.size)));
       json.push_back(json_spirit::Pair("density", static_cast<double>(info.density)));
+      json.push_back(json_spirit::Pair("fps", static_cast<double>(info.fps)));
       json.push_back(json_spirit::Pair("secure", info.secure));
 
       switch (info.orientation) {
