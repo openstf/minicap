@@ -8,17 +8,7 @@
 
 class capster {
 public:
-  class display_info {
-  public:
-    uint32_t width;
-    uint32_t height;
-    float xdpi;
-    float ydpi;
-    float size;
-    float density;
-  };
-
-  static display_info
+  static minicap::display_info
   get_display_info(uint32_t display_id);
 
   capster(uint32_t display_id);

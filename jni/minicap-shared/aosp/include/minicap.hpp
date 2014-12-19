@@ -22,6 +22,25 @@ public:
     FORMAT_UNKNOWN       = 0x00,
   };
 
+  enum orientation {
+    ORIENTATION_0    = 0,
+    ORIENTATION_90   = 1,
+    ORIENTATION_180  = 2,
+    ORIENTATION_270  = 3,
+  };
+
+  struct display_info {
+    uint32_t width;
+    uint32_t height;
+    uint8_t orientation;
+    float fps;
+    float density;
+    float xdpi;
+    float ydpi;
+    bool secure;
+    float size;
+  };
+
   virtual
   ~minicap() {}
 
@@ -55,8 +74,8 @@ public:
   virtual int32_t
   get_display_id() = 0;
 
-  virtual void
-  get_display_info() = 0;
+  virtual int
+  get_display_info(display_info* info) = 0;
 };
 
 minicap*

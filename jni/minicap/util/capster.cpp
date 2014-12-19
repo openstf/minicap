@@ -10,37 +10,44 @@
 #include "capster.hpp"
 #include "formatter.hpp"
 
-capster::display_info capster::get_display_info(uint32_t display_id) {
-  display_info info;
+minicap::display_info capster::get_display_info(uint32_t display_id) {
+  minicap::display_info info;
 
-  char path[64];
-  sprintf(path, "/dev/graphics/fb%d", display_id);
+  std::unique_ptr<minicap> mc(minicap_create(display_id));
 
-  int fd = open(path, O_RDONLY);
+  if (mc->get_display_info(&info) != 0) {
+    char path[64];
+    sprintf(path, "/dev/graphics/fb%d", display_id);
 
-  if (fd < 0) {
-    throw std::runtime_error(formatter() << "Cannot open " << path << ": " << strerror(errno));
-  }
+    int fd = open(path, O_RDONLY);
 
-  fb_var_screeninfo vinfo;
+    if (fd < 0) {
+      throw std::runtime_error(formatter() << "Cannot open " << path << ": " << strerror(errno));
+    }
 
-  if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0) {
+    fb_var_screeninfo vinfo;
+
+    if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0) {
+      close(fd);
+      throw std::runtime_error(formatter() << "Cannot get FBIOGET_VSCREENINFO of " << path << ": " << strerror(errno));
+    }
+
+    info.width = vinfo.xres;
+    info.height = vinfo.yres;
+    info.orientation = vinfo.rotate;
+    info.xdpi = static_cast<float>(vinfo.xres) / static_cast<float>(vinfo.width) * 25.4;
+    info.ydpi = static_cast<float>(vinfo.yres) / static_cast<float>(vinfo.height) * 25.4;
+    info.size = std::sqrt(
+      (static_cast<float>(vinfo.width) * static_cast<float>(vinfo.width)) +
+      (static_cast<float>(vinfo.height) * static_cast<float>(vinfo.height))) / 25.4;
+    info.density = std::sqrt(
+      (static_cast<float>(vinfo.xres) * static_cast<float>(vinfo.xres)) +
+      (static_cast<float>(vinfo.yres) * static_cast<float>(vinfo.yres))) / info.size;
+    info.secure = false;
+    info.fps = 0;
+
     close(fd);
-    throw std::runtime_error(formatter() << "Cannot get FBIOGET_VSCREENINFO of " << path << ": " << strerror(errno));
   }
-
-  info.width = vinfo.xres;
-  info.height = vinfo.yres;
-  info.xdpi = static_cast<float>(vinfo.xres) / static_cast<float>(vinfo.width) * 25.4;
-  info.ydpi = static_cast<float>(vinfo.yres) / static_cast<float>(vinfo.height) * 25.4;
-  info.size = std::sqrt(
-    (static_cast<float>(vinfo.width) * static_cast<float>(vinfo.width)) +
-    (static_cast<float>(vinfo.height) * static_cast<float>(vinfo.height))) / 25.4;
-  info.density = std::sqrt(
-    (static_cast<float>(vinfo.xres) * static_cast<float>(vinfo.xres)) +
-    (static_cast<float>(vinfo.yres) * static_cast<float>(vinfo.yres))) / info.size;
-
-  close(fd);
 
   return info;
 }

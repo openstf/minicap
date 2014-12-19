@@ -170,7 +170,7 @@ int main(int argc, char* argv[]) {
 
   if (show_info) {
     try {
-      capster::display_info info = capster::get_display_info(display_id);
+      minicap::display_info info = capster::get_display_info(display_id);
 
       json_spirit::Object json;
       json.push_back(json_spirit::Pair("id", static_cast<int>(display_id)));
@@ -180,6 +180,22 @@ int main(int argc, char* argv[]) {
       json.push_back(json_spirit::Pair("ydpi", static_cast<double>(info.ydpi)));
       json.push_back(json_spirit::Pair("size", static_cast<double>(info.size)));
       json.push_back(json_spirit::Pair("density", static_cast<double>(info.density)));
+      json.push_back(json_spirit::Pair("secure", info.secure));
+
+      switch (info.orientation) {
+      case minicap::ORIENTATION_0:
+        json.push_back(json_spirit::Pair("rotation", 0));
+        break;
+      case minicap::ORIENTATION_90:
+        json.push_back(json_spirit::Pair("rotation", 90));
+        break;
+      case minicap::ORIENTATION_180:
+        json.push_back(json_spirit::Pair("rotation", 180));
+        break;
+      case minicap::ORIENTATION_270:
+        json.push_back(json_spirit::Pair("rotation", 270));
+        break;
+      }
 
       std::cout << json_spirit::write(json,
         json_spirit::remove_trailing_zeros | json_spirit::pretty_print);

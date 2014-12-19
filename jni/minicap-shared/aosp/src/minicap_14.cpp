@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <math.h>
 
 #include <binder/ProcessState.h>
 
@@ -13,6 +14,7 @@
 #include <surfaceflinger/ISurfaceComposer.h>
 #include <surfaceflinger/SurfaceComposerClient.h>
 
+#include <ui/DisplayInfo.h>
 #include <ui/PixelFormat.h>
 
 using namespace android;
@@ -134,10 +136,30 @@ public:
     return m_display_id;
   }
 
-  virtual void
-  get_display_info()
+  virtual int
+  get_display_info(display_info* info)
   {
-    // @todo
+    DisplayInfo dinfo;
+    status_t err = SurfaceComposerClient::getDisplayInfo(m_display_id, &dinfo);
+
+    if (err != NO_ERROR)
+    {
+      fprintf(stderr, "SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n",
+        error_name(err), err);
+      return 1;
+    }
+
+    info->width = dinfo.w;
+    info->height = dinfo.h;
+    info->orientation = dinfo.orientation;
+    info->fps = dinfo.fps;
+    info->density = dinfo.density;
+    info->xdpi = dinfo.xdpi;
+    info->ydpi = dinfo.ydpi;
+    info->secure = false;
+    info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
+
+    return 0;
   }
 
 private:
