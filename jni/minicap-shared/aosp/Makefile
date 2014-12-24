@@ -144,7 +144,7 @@ libs/android-21/armeabi-v7a/minicap.so: $(SOURCES)
 		-v /srv/aosp/android-5.0.1_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		sorccu/aosp:jdk6 /aosp.sh build aosp_arm-eng minicap
+		sorccu/aosp:jdk7 /aosp.sh build aosp_arm-eng minicap
 
 libs/android-21/arm64-v8a/minicap.so: $(SOURCES)
 	mkdir -p $(@D)
@@ -153,7 +153,7 @@ libs/android-21/arm64-v8a/minicap.so: $(SOURCES)
 		-v /srv/aosp/android-5.0.1_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		sorccu/aosp:jdk6 /aosp.sh build aosp_arm64-eng minicap
+		sorccu/aosp:jdk7 /aosp.sh build aosp_arm64-eng minicap
 
 libs/android-21/x86/minicap.so: $(SOURCES)
 	mkdir -p $(@D)
@@ -162,7 +162,7 @@ libs/android-21/x86/minicap.so: $(SOURCES)
 		-v /srv/aosp/android-5.0.1_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		sorccu/aosp:jdk6 /aosp.sh build aosp_x86-eng minicap
+		sorccu/aosp:jdk7 /aosp.sh build aosp_x86-eng minicap
 
 libs/android-21/x86_64/minicap.so: $(SOURCES)
 	mkdir -p $(@D)
@@ -171,7 +171,7 @@ libs/android-21/x86_64/minicap.so: $(SOURCES)
 		-v /srv/aosp/android-5.0.1_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		sorccu/aosp:jdk6 /aosp.sh build aosp_x86_64-eng minicap
+		sorccu/aosp:jdk7 /aosp.sh build aosp_x86_64-eng minicap
 
 libs/android-21/mips/minicap.so: $(SOURCES)
 	mkdir -p $(@D)
@@ -180,7 +180,7 @@ libs/android-21/mips/minicap.so: $(SOURCES)
 		-v /srv/aosp/android-5.0.1_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		sorccu/aosp:jdk6 /aosp.sh build aosp_mips-eng minicap
+		sorccu/aosp:jdk7 /aosp.sh build aosp_mips-eng minicap
 
 libs/android-21/mips64/minicap.so: $(SOURCES)
 	mkdir -p $(@D)
@@ -189,4 +189,4 @@ libs/android-21/mips64/minicap.so: $(SOURCES)
 		-v /srv/aosp/android-5.0.1_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		sorccu/aosp:jdk6 /aosp.sh build aosp_mips64-eng minicap
+		sorccu/aosp:jdk7 /aosp.sh build aosp_mips64-eng minicap
