@@ -13,9 +13,13 @@
 minicap::display_info capster::get_display_info(uint32_t display_id) {
   minicap::display_info info;
 
-  std::unique_ptr<minicap> mc(minicap_create(display_id));
+  minicap* mc = minicap_create(display_id);
 
-  if (mc->get_display_info(&info) != 0) {
+  int err = mc->get_display_info(&info);
+
+  minicap_free(mc);
+
+  if (err != 0) {
     char path[64];
     sprintf(path, "/dev/graphics/fb%d", display_id);
 
@@ -62,6 +66,10 @@ capster::capster(uint32_t display_id)
     m_desired_width(0),
     m_desired_height(0)
 {
+}
+
+capster::~capster() {
+  minicap_free(m_minicap);
 }
 
 int

@@ -82,6 +82,9 @@ minicap*
 minicap_create(int32_t display_id);
 
 void
+minicap_free(minicap* mc);
+
+void
 minicap_start_thread_pool();
 
 #endif

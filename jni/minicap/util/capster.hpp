@@ -13,6 +13,8 @@ public:
 
   capster(uint32_t display_id);
 
+  ~capster();
+
   int
   initial_update();
 
@@ -36,7 +38,7 @@ private:
   reserve_data();
 
   tjhandle m_tjhandle;
-  std::unique_ptr<minicap> m_minicap;
+  minicap* m_minicap;
   int m_subsampling;
   unsigned int m_quality;
   unsigned int m_format;

@@ -257,6 +257,12 @@ minicap_create(int32_t display_id)
 }
 
 void
+minicap_free(minicap* mc)
+{
+  delete mc;
+}
+
+void
 minicap_start_thread_pool()
 {
   ProcessState::self()->startThreadPool();
