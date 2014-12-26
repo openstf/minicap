@@ -1,5 +1,5 @@
 this_dir = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-SOURCES := $(shell find . -name '*.cpp' -or -name '*.mk')
+SOURCES := Android.mk include/minicap.hpp
 
 all: \
 	libs/android-10/armeabi-v7a/minicap.so \
@@ -20,7 +20,7 @@ all: \
 	libs/android-21/x86/minicap.so \
 	libs/android-21/x86_64/minicap.so \
 
-libs/android-10/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-10/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_10.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -29,7 +29,7 @@ libs/android-10/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build generic-eng minicap
 
-libs/android-14/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-14/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_14.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -38,7 +38,7 @@ libs/android-14/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full-eng minicap
 
-libs/android-14/x86/minicap.so: $(SOURCES)
+libs/android-14/x86/minicap.so: $(SOURCES) src/minicap_14.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -47,7 +47,7 @@ libs/android-14/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full_x86-eng minicap
 
-libs/android-15/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-15/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_14.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -56,7 +56,7 @@ libs/android-15/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full-eng minicap
 
-libs/android-15/x86/minicap.so: $(SOURCES)
+libs/android-15/x86/minicap.so: $(SOURCES) src/minicap_14.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -65,7 +65,7 @@ libs/android-15/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full_x86-eng minicap
 
-libs/android-16/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-16/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_16.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -74,7 +74,7 @@ libs/android-16/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full-eng minicap
 
-libs/android-16/x86/minicap.so: $(SOURCES)
+libs/android-16/x86/minicap.so: $(SOURCES) src/minicap_16.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -83,7 +83,7 @@ libs/android-16/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full_x86-eng minicap
 
-libs/android-17/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-17/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_17.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -92,7 +92,7 @@ libs/android-17/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full-eng minicap
 
-libs/android-17/x86/minicap.so: $(SOURCES)
+libs/android-17/x86/minicap.so: $(SOURCES) src/minicap_17.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -101,7 +101,7 @@ libs/android-17/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build full_x86-eng minicap
 
-libs/android-18/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-18/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_18.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -110,7 +110,7 @@ libs/android-18/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build aosp_arm-eng minicap
 
-libs/android-18/x86/minicap.so: $(SOURCES)
+libs/android-18/x86/minicap.so: $(SOURCES) src/minicap_18.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -119,7 +119,7 @@ libs/android-18/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build aosp_x86-eng minicap
 
-libs/android-19/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-19/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_19.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -128,7 +128,7 @@ libs/android-19/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build aosp_arm-eng minicap
 
-libs/android-19/x86/minicap.so: $(SOURCES)
+libs/android-19/x86/minicap.so: $(SOURCES) src/minicap_19.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -137,7 +137,7 @@ libs/android-19/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk6 /aosp.sh build aosp_x86-eng minicap
 
-libs/android-21/armeabi-v7a/minicap.so: $(SOURCES)
+libs/android-21/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_21.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -146,7 +146,7 @@ libs/android-21/armeabi-v7a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk7 /aosp.sh build aosp_arm-eng minicap
 
-libs/android-21/arm64-v8a/minicap.so: $(SOURCES)
+libs/android-21/arm64-v8a/minicap.so: $(SOURCES) src/minicap_21.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -155,7 +155,7 @@ libs/android-21/arm64-v8a/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk7 /aosp.sh build aosp_arm64-eng minicap
 
-libs/android-21/x86/minicap.so: $(SOURCES)
+libs/android-21/x86/minicap.so: $(SOURCES) src/minicap_21.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -164,7 +164,7 @@ libs/android-21/x86/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk7 /aosp.sh build aosp_x86-eng minicap
 
-libs/android-21/x86_64/minicap.so: $(SOURCES)
+libs/android-21/x86_64/minicap.so: $(SOURCES) src/minicap_21.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -173,7 +173,7 @@ libs/android-21/x86_64/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk7 /aosp.sh build aosp_x86_64-eng minicap
 
-libs/android-21/mips/minicap.so: $(SOURCES)
+libs/android-21/mips/minicap.so: $(SOURCES) src/minicap_21.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
@@ -182,7 +182,7 @@ libs/android-21/mips/minicap.so: $(SOURCES)
 		-v $(this_dir)$(@D):/artifacts \
 		sorccu/aosp:jdk7 /aosp.sh build aosp_mips-eng minicap
 
-libs/android-21/mips64/minicap.so: $(SOURCES)
+libs/android-21/mips64/minicap.so: $(SOURCES) src/minicap_21.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
