@@ -12,7 +12,27 @@
 #include <binder/IMemory.h>
 
 #include <gui/ISurfaceComposer.h>
+
+// This is incredibly hacky, but required for the following reasons:
+//
+// - Plain ScreenshotClient
+//
+// We can't use the ScreenshotClient directly because it cares about security
+// and is slower than it could be, and it doesn't work reliably since 5.0
+// (often it just produces a black or corrupted screen). Getting rid of
+// the memory zeroing makes it work properly. Problematic devices include
+// Nexus 6 (all black) and Nexus 5 (random black stripes).
+//
+// - Our own ScreenshotClient
+//
+// We can't just copy and paste the ScreenshotClient implementation and hack
+// away the unnecessary parts. For some reason some devices (e.g. F-02G) will
+// segfault. If we let the ScreenshotClient create the buffers and consumers
+// for us and then access them directly, it works. The issue probably occurs
+// because we have to create the BufferQueue ourselves with `new BufferQueue`.
+#define private public
 #include <gui/SurfaceComposerClient.h>
+#undef private
 
 #include <private/gui/ComposerService.h>
 
@@ -194,14 +214,14 @@ private:
   mutable sp<BufferQueue> m_buffer_queue;
   CpuConsumer::LockedBuffer m_buffer;
   bool m_have_buffer;
+  ScreenshotClient m_client;
 
   sp<CpuConsumer> getCpuConsumer() const
   {
     if (m_cpu_consumer == NULL)
     {
-      m_buffer_queue = new BufferQueue();
-      m_cpu_consumer = new CpuConsumer(m_buffer_queue, 1);
-      m_cpu_consumer->setName(String8("ScreenshotClient"));
+      m_cpu_consumer = m_client.getCpuConsumer();
+      m_buffer_queue = m_client.mBufferQueue;
     }
 
     return m_cpu_consumer;
