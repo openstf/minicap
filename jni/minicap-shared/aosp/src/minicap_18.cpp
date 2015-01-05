@@ -43,9 +43,10 @@ public:
   {
     sp<CpuConsumer> cpuConsumer = getCpuConsumer();
 
-    if (m_have_buffer) {
-        m_cpu_consumer->unlockBuffer(m_buffer);
-        m_have_buffer = false;
+    if (m_have_buffer)
+    {
+      m_cpu_consumer->unlockBuffer(m_buffer);
+      m_have_buffer = false;
     }
 
     status_t err = m_composer->captureScreen(m_display,
@@ -53,12 +54,12 @@ public:
 
     if (err == NO_ERROR)
     {
-        err = m_cpu_consumer->lockNextBuffer(&m_buffer);
+      err = m_cpu_consumer->lockNextBuffer(&m_buffer);
 
-        if (err == NO_ERROR)
-        {
-            m_have_buffer = true;
-        }
+      if (err == NO_ERROR)
+      {
+        m_have_buffer = true;
+      }
     }
     else
     {
@@ -73,10 +74,11 @@ public:
   virtual void
   release()
   {
-    if (m_have_buffer) {
-        m_cpu_consumer->unlockBuffer(m_buffer);
-        memset(&m_buffer, 0, sizeof(m_buffer));
-        m_have_buffer = false;
+    if (m_have_buffer)
+    {
+      m_cpu_consumer->unlockBuffer(m_buffer);
+      memset(&m_buffer, 0, sizeof(m_buffer));
+      m_have_buffer = false;
     }
 
     m_cpu_consumer.clear();
@@ -196,8 +198,8 @@ private:
   {
     if (m_cpu_consumer == NULL)
     {
-        m_cpu_consumer = new CpuConsumer(1);
-        m_cpu_consumer->setName(String8("ScreenshotClient"));
+      m_cpu_consumer = new CpuConsumer(1);
+      m_cpu_consumer->setName(String8("ScreenshotClient"));
     }
 
     return m_cpu_consumer;
