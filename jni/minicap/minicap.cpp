@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
                 << "    \"size\": "     << info.size    << "," << std::endl
                 << "    \"density\": "  << info.density << "," << std::endl
                 << "    \"fps\": "      << info.fps     << "," << std::endl
-                << "    \"secure\": "   << info.secure  << "," << std::endl
+                << "    \"secure\": "   << (info.secure ? "true" : "false") << "," << std::endl
                 << "    \"rotation\": " << rotation            << std::endl
                 << "}"                                         << std::endl;
 
