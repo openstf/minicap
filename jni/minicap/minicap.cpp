@@ -172,34 +172,37 @@ int main(int argc, char* argv[]) {
     try {
       minicap::display_info info = capster::get_display_info(display_id);
 
-      json_spirit::Object json;
-      json.push_back(json_spirit::Pair("id", static_cast<int>(display_id)));
-      json.push_back(json_spirit::Pair("width", static_cast<int>(info.width)));
-      json.push_back(json_spirit::Pair("height", static_cast<int>(info.height)));
-      json.push_back(json_spirit::Pair("xdpi", static_cast<double>(info.xdpi)));
-      json.push_back(json_spirit::Pair("ydpi", static_cast<double>(info.ydpi)));
-      json.push_back(json_spirit::Pair("size", static_cast<double>(info.size)));
-      json.push_back(json_spirit::Pair("density", static_cast<double>(info.density)));
-      json.push_back(json_spirit::Pair("fps", static_cast<double>(info.fps)));
-      json.push_back(json_spirit::Pair("secure", info.secure));
-
+      int rotation;
       switch (info.orientation) {
       case minicap::ORIENTATION_0:
-        json.push_back(json_spirit::Pair("rotation", 0));
+        rotation = 0;
         break;
       case minicap::ORIENTATION_90:
-        json.push_back(json_spirit::Pair("rotation", 90));
+        rotation = 90;
         break;
       case minicap::ORIENTATION_180:
-        json.push_back(json_spirit::Pair("rotation", 180));
+        rotation = 180;
         break;
       case minicap::ORIENTATION_270:
-        json.push_back(json_spirit::Pair("rotation", 270));
+        rotation = 270;
         break;
       }
 
-      std::cout << json_spirit::write(json,
-        json_spirit::remove_trailing_zeros | json_spirit::pretty_print);
+      std::cout.precision(2);
+      std::cout.setf(std::ios_base::fixed, std::ios_base::floatfield);
+
+      std::cout << "{"                                         << std::endl
+                << "    \"id\": "       << display_id   << "," << std::endl
+                << "    \"width\": "    << info.width   << "," << std::endl
+                << "    \"height\": "   << info.height  << "," << std::endl
+                << "    \"xdpi\": "     << info.xdpi    << "," << std::endl
+                << "    \"ydpi\": "     << info.ydpi    << "," << std::endl
+                << "    \"size\": "     << info.size    << "," << std::endl
+                << "    \"density\": "  << info.density << "," << std::endl
+                << "    \"fps\": "      << info.fps     << "," << std::endl
+                << "    \"secure\": "   << info.secure  << "," << std::endl
+                << "    \"rotation\": " << rotation            << std::endl
+                << "}"                                         << std::endl;
 
       return EXIT_SUCCESS;
     }
