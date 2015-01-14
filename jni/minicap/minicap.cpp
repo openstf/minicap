@@ -7,12 +7,6 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 
-#include <json_spirit.h>
-
-#ifndef JSON_SPIRIT_MVALUE_ENABLED
-#error Please define JSON_SPIRIT_MVALUE_ENABLED for the mValue type to be enabled
-#endif
-
 #include "util/capster.hpp"
 
 #define DEFAULT_DISPLAY_ID 0
@@ -36,16 +30,6 @@ static void usage(const char* pname)
     "  -h:            Show help.\n",
     pname, DEFAULT_DISPLAY_ID, DEFAULT_WEBSOCKET_PORT
   );
-}
-
-const json_spirit::mValue& find_value(const json_spirit::mObject& obj, const std::string& name)
-{
-    json_spirit::mObject::const_iterator i = obj.find(name);
-
-    assert(i != obj.end());
-    assert(i->first == name);
-
-    return i->second;
 }
 
 class capster_server {
@@ -92,39 +76,42 @@ public:
   void on_message(connection_hdl hdl, server::message_ptr msg) {
     std::istringstream in(msg->get_payload());
 
-    json_spirit::mValue value;
+    char cmd;
+    in >> cmd;
 
-    read(in, value);
-
-    const json_spirit::mObject& root = value.get_obj();
-
-    std::string op = find_value(root, "op").get_str();
-
-    if (op.compare("jpeg") == 0) {
-      unsigned int width, height;
-
-      width = find_value(root, "w").get_int();
-      height = find_value(root, "h").get_int();
-
-      m_capster.set_desired_size(width, height);
-
-      try {
-        if (m_capster.update() != 0) {
-          m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
-        }
-        else {
-          m_capster.convert();
-          m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
-            websocketpp::frame::opcode::BINARY);
-        }
+    switch (cmd) {
+      case 's': {
+        unsigned int width, height;
+        in >> width >> height;
+        m_capster.set_desired_size(width, height);
+        break;
       }
-      catch (websocketpp::exception& e) {
-        if (e.code() == websocketpp::error::bad_connection) {
-          // The connection doesn't exist anymore.
+      case 'j': {
+        unsigned int width, height;
+        in >> width >> height;
+
+        m_capster.set_desired_size(width, height);
+
+        try {
+          if (m_capster.update() != 0) {
+            m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
+          }
+          else {
+            m_capster.convert();
+            m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
+              websocketpp::frame::opcode::BINARY);
+          }
         }
-        else {
-          std::cout << e.what() << std::endl;
+        catch (websocketpp::exception& e) {
+          if (e.code() == websocketpp::error::bad_connection) {
+            // The connection doesn't exist anymore.
+          }
+          else {
+            std::cout << e.what() << std::endl;
+          }
         }
+
+        break;
       }
     }
   }
