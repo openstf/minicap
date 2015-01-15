@@ -4,6 +4,8 @@
 #include <sstream>
 #include <stdexcept>
 
+#include <boost/timer/timer.hpp>
+
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 
@@ -27,6 +29,7 @@ static void usage(const char* pname)
     "  -p <port>:     WebSocket server port. (%d)\n"
     "  -i:            Get display information in JSON format.\n"
     "  -s:            Take a screenshot and output it to stdout.\n"
+    "  -b <size>:     Benchmark the given size.\n"
     "  -h:            Show help.\n",
     pname, DEFAULT_DISPLAY_ID, DEFAULT_WEBSOCKET_PORT
   );
@@ -129,9 +132,11 @@ int main(int argc, char* argv[]) {
   uint16_t port = DEFAULT_WEBSOCKET_PORT;
   bool show_info = false;
   bool take_screenshot = false;
+  bool run_benchmark = false;
+  unsigned int benchmark_w, benchmark_h;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:p:ish")) != -1) {
+  while ((opt = getopt(argc, argv, "d:p:isb:h")) != -1) {
     switch (opt) {
       case 'd':
         display_id = atoi(optarg);
@@ -146,6 +151,13 @@ int main(int argc, char* argv[]) {
       case 's':
         take_screenshot = true;
         break;
+      case 'b': {
+        char* cursor;
+        run_benchmark = true;
+        benchmark_w = strtol(optarg, &cursor, 10);
+        benchmark_h = strtol(cursor + 1, &cursor, 10);
+        break;
+      }
       case '?':
         usage(pname);
         return EXIT_FAILURE;
@@ -210,6 +222,41 @@ int main(int argc, char* argv[]) {
       capster_instance.convert();
 
       write(STDOUT_FILENO, capster_instance.get_data(), capster_instance.get_size());
+
+      return EXIT_SUCCESS;
+    }
+    catch (std::exception & e) {
+      std::cerr << "ERROR: " << e.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (run_benchmark) {
+    try {
+      capster capster_instance(display_id);
+
+      if (capster_instance.initial_update() != 0) {
+        throw std::runtime_error("Unable to access screen");
+      }
+
+      int times = 100;
+
+      std::cerr << "Running benchmark on size " << benchmark_w << "x"
+        << benchmark_h << " " << times << " times" << std::endl;
+
+      capster_instance.set_desired_size(benchmark_w, benchmark_h);
+
+      boost::timer::auto_cpu_timer t;
+
+      while (times--) {
+
+        if (capster_instance.update() != 0) {
+          throw std::runtime_error("Unable to access screen");
+        }
+        else {
+          capster_instance.convert();
+        }
+      }
 
       return EXIT_SUCCESS;
     }

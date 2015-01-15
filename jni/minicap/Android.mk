@@ -10,6 +10,7 @@ LOCAL_SRC_FILES := \
 LOCAL_STATIC_LIBRARIES := \
 	libjpeg-turbo \
 	websocketpp \
+	boost \
 
 LOCAL_SHARED_LIBRARIES := \
 	minicap-shared \
