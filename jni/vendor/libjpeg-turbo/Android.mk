@@ -3,7 +3,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libjpeg-turbo
 
-SOURCE_PATH := libjpeg-turbo-1.3.90
+SOURCE_PATH := libjpeg-turbo-1.4.0
 
 ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a armeabi-v7a-hard x86),)
 LOCAL_ARM_NEON := true
