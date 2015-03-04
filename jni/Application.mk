@@ -18,18 +18,20 @@ APP_CFLAGS += \
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 # http://community.arm.com/groups/tools/blog/2013/04/15/arm-cortex-a-processors-and-gcc-command-lines
 APP_CFLAGS += \
-	-mcpu=cortex-a9 \
-	-mfpu=neon-fp16 \
+	-march=armv7-a \
+	-mfpu=neon \
 	-mfloat-abi=softfp \
+	-marm \
 	-fprefetch-loop-arrays \
 	-DHAVE_NEON=1 \
 
 else ifeq ($(TARGET_ARCH_ABI),armeabi-v7a-hard)
 # http://community.arm.com/groups/tools/blog/2013/04/15/arm-cortex-a-processors-and-gcc-command-lines
 APP_CFLAGS += \
-	-mcpu=cortex-a9 \
-	-mfpu=neon-fp16 \
+	-march=armv7-a \
+	-mfpu=neon \
 	-mfloat-abi=hard \
+	-marm \
 	-fprefetch-loop-arrays \
 	-DHAVE_NEON=1 \
 	-mhard-float \
