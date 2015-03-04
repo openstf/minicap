@@ -41,11 +41,20 @@ public:
     float size;
   };
 
+  minicap(int32_t display_id)
+    : m_display_id(display_id) {}
+
   virtual
   ~minicap() {}
 
+  virtual bool
+  supports_push() = 0;
+
   virtual int
-  update(uint32_t width, uint32_t height) = 0;
+  begin_updates() = 0;
+
+  virtual int
+  update() = 0;
 
   virtual void
   release() = 0;
@@ -76,6 +85,15 @@ public:
 
   virtual int
   get_display_info(display_info* info) = 0;
+
+  virtual int
+  set_real_size(uint32_t width, uint32_t height) = 0;
+
+  virtual int
+  set_desired_projection(uint32_t width, uint32_t height, uint8_t orientation) = 0;
+
+protected:
+  uint32_t m_display_id;
 };
 
 minicap*

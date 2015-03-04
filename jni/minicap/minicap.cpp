@@ -9,10 +9,13 @@
 #include <websocketpp/config/asio_no_tls.hpp>
 #include <websocketpp/server.hpp>
 
-#include "util/capster.hpp"
+#include "util/debug.h"
+#include "capster.hpp"
+#include "jpg_encoder.hpp"
 
 #define DEFAULT_DISPLAY_ID 0
 #define DEFAULT_WEBSOCKET_PORT 9002
+#define DEFAULT_QUALITY 80
 
 typedef websocketpp::server<websocketpp::config::asio> server;
 
@@ -26,6 +29,7 @@ static void usage(const char* pname)
   fprintf(stderr,
     "Usage: %s [-h] [-d <display>] [-i] [-s] [-p <port>]\n"
     "  -d <display>:  Display ID. (%d)\n"
+    "  -D <size>:     Display size. Must be given due to binary incompatibilities.\n"
     "  -p <port>:     WebSocket server port. (%d)\n"
     "  -i:            Get display information in JSON format.\n"
     "  -s:            Take a screenshot and output it to stdout.\n"
@@ -37,9 +41,9 @@ static void usage(const char* pname)
 
 class capster_server {
 public:
-  capster_server(uint32_t display_id) : m_capster(display_id) {
-    m_capster.initial_update();
-
+  capster_server(capster& capster, jpg_encoder& enc)
+    : m_capster(capster),
+      m_encoder(enc) {
     // Don't log
     m_server.set_access_channels(websocketpp::log::alevel::none);
 
@@ -79,49 +83,35 @@ public:
   void on_message(connection_hdl hdl, server::message_ptr msg) {
     std::istringstream in(msg->get_payload());
 
-    char cmd;
-    in >> cmd;
+    unsigned int width, height, orientation;
+    in >> width >> height >> orientation;
 
-    switch (cmd) {
-      case 's': {
-        unsigned int width, height;
-        in >> width >> height;
-        m_capster.set_desired_size(width, height);
-        break;
+    m_capster.set_desired_projection(width, height, orientation);
+
+    try {
+      if (m_capster.update() != 0) {
+        m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
       }
-      case 'j': {
-        unsigned int width, height;
-        in >> width >> height;
-
-        m_capster.set_desired_size(width, height);
-
-        try {
-          if (m_capster.update() != 0) {
-            m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
-          }
-          else {
-            m_capster.convert();
-            m_server.send(hdl, m_capster.get_data(), m_capster.get_size(),
-              websocketpp::frame::opcode::BINARY);
-          }
-        }
-        catch (websocketpp::exception& e) {
-          if (e.code() == websocketpp::error::bad_connection) {
-            // The connection doesn't exist anymore.
-          }
-          else {
-            std::cout << e.what() << std::endl;
-          }
-        }
-
-        break;
+      else {
+        m_encoder.encode(m_capster, DEFAULT_QUALITY);
+        m_server.send(hdl, m_encoder.get_encoded_data(), m_encoder.get_encoded_size(),
+          websocketpp::frame::opcode::BINARY);
+      }
+    }
+    catch (websocketpp::exception& e) {
+      if (e.code() == websocketpp::error::bad_connection) {
+        // The connection doesn't exist anymore.
+      }
+      else {
+        std::cout << e.what() << std::endl;
       }
     }
   }
 
 private:
   server m_server;
-  capster m_capster;
+  capster& m_capster;
+  jpg_encoder& m_encoder;
 };
 
 int main(int argc, char* argv[]) {
@@ -134,13 +124,20 @@ int main(int argc, char* argv[]) {
   bool take_screenshot = false;
   bool run_benchmark = false;
   unsigned int benchmark_w, benchmark_h;
+  unsigned int display_w = 0, display_h = 0, display_o = 0;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:p:isb:h")) != -1) {
+  while ((opt = getopt(argc, argv, "d:D:p:isb:h")) != -1) {
     switch (opt) {
       case 'd':
         display_id = atoi(optarg);
         break;
+      case 'D': {
+        char* cursor;
+        display_w = strtol(optarg, &cursor, 10);
+        display_h = strtol(cursor + 1, &cursor, 10);
+        break;
+      }
       case 'p':
         port = atoi(optarg);
         break;
@@ -211,17 +208,27 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  if (display_w == 0 || display_h == 0) {
+    std::cerr << "ERROR: display size must be given" << std::endl;
+    return EXIT_FAILURE;
+  }
+
   if (take_screenshot) {
     try {
+      jpg_encoder enc(display_w, display_h);
+
       capster capster_instance(display_id);
 
-      if (capster_instance.initial_update() != 0) {
-        throw std::runtime_error("Unable to access screen");
-      }
+      capster_instance.set_real_size(display_w, display_h);
+      capster_instance.set_desired_projection(display_w, display_h, display_o);
 
-      capster_instance.convert();
+      capster_instance.begin_updates();
 
-      write(STDOUT_FILENO, capster_instance.get_data(), capster_instance.get_size());
+      capster_instance.update();
+
+      enc.encode(capster_instance, DEFAULT_QUALITY);
+
+      write(STDOUT_FILENO, enc.get_encoded_data(), enc.get_encoded_size());
 
       return EXIT_SUCCESS;
     }
@@ -235,26 +242,26 @@ int main(int argc, char* argv[]) {
     try {
       capster capster_instance(display_id);
 
-      if (capster_instance.initial_update() != 0) {
-        throw std::runtime_error("Unable to access screen");
-      }
-
       int times = 100;
 
       std::cerr << "Running benchmark on size " << benchmark_w << "x"
         << benchmark_h << " " << times << " times" << std::endl;
 
-      capster_instance.set_desired_size(benchmark_w, benchmark_h);
+      jpg_encoder enc(display_w, display_h);
+
+      capster_instance.set_real_size(display_w, display_h);
+      capster_instance.set_desired_projection(benchmark_w, benchmark_h, display_o);
+
+      capster_instance.begin_updates();
 
       boost::timer::auto_cpu_timer t;
 
       while (times--) {
-
         if (capster_instance.update() != 0) {
           throw std::runtime_error("Unable to access screen");
         }
         else {
-          capster_instance.convert();
+          enc.encode(capster_instance, DEFAULT_QUALITY);
         }
       }
 
@@ -267,7 +274,16 @@ int main(int argc, char* argv[]) {
   }
 
   try {
-    capster_server server_instance(display_id);
+    jpg_encoder enc(display_w, display_h);
+
+    capster capster_instance(display_id);
+
+    capster_instance.set_real_size(display_w, display_h);
+    capster_instance.set_desired_projection(display_w / 2, display_h / 2, display_o);
+
+    capster_instance.begin_updates();
+
+    capster_server server_instance(capster_instance, enc);
 
     // Run the asio loop with the main thread
     server_instance.run(port);
