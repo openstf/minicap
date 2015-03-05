@@ -6,6 +6,9 @@ LOCAL_MODULE := libwebsockets
 SOURCE_PATH := libwebsockets
 
 LOCAL_SRC_FILES += \
+	getdtablesize.c \
+
+LOCAL_SRC_FILES += \
 	$(SOURCE_PATH)/lib/base64-decode.c \
 	$(SOURCE_PATH)/lib/handshake.c \
 	$(SOURCE_PATH)/lib/libwebsockets.c \
