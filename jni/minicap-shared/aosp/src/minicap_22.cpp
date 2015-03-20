@@ -86,7 +86,7 @@ public:
   }
 
   virtual void
-  onFrameAvailable() {
+  onFrameAvailable(const android::BufferItem& /* item */) {
     android::Mutex::Autolock lock(mMutex);
     mPendingFrames++;
     mCondition.signal();
@@ -207,7 +207,8 @@ private:
   uint32_t mDesiredWidth;
   uint32_t mDesiredHeight;
   uint8_t mDesiredOrientation;
-  android::sp<android::BufferQueue> mBufferQueue;
+  android::sp<android::IGraphicBufferProducer> mBufferProducer;
+  android::sp<android::IGraphicBufferConsumer> mBufferConsumer;
   android::sp<android::CpuConsumer> mConsumer;
   android::sp<android::IBinder> mVirtualDisplay;
   android::sp<FrameWaiter> mWaiter;
@@ -240,17 +241,17 @@ private:
     );
 
     MCINFO("Creating buffer queue");
-    mBufferQueue = new android::BufferQueue();
+    android::BufferQueue::createBufferQueue(&mBufferProducer, &mBufferConsumer);
 
     // Unfortunately having async buffers causes vsync issues on at least
     // Galaxy Note Pro 12.2 LTE.
-    mBufferQueue->disableAsyncBuffer();
+    mBufferConsumer->disableAsyncBuffer();
 
-    mBufferQueue->setDefaultBufferSize(mDesiredWidth, mDesiredHeight);
-    mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
+    mBufferConsumer->setDefaultBufferSize(mDesiredWidth, mDesiredHeight);
+    mBufferConsumer->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
 
     MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(mBufferQueue, 1, false);
+    mConsumer = new android::CpuConsumer(mBufferConsumer, 1, false);
     mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating frame waiter");
@@ -259,7 +260,7 @@ private:
 
     MCINFO("Publishing virtual display");
     android::SurfaceComposerClient::openGlobalTransaction();
-    android::SurfaceComposerClient::setDisplaySurface(mVirtualDisplay, mBufferQueue);
+    android::SurfaceComposerClient::setDisplaySurface(mVirtualDisplay, mBufferProducer);
     android::SurfaceComposerClient::setDisplayProjection(mVirtualDisplay,
       mDesiredOrientation,
       layerStackRect, visibleRect);
@@ -281,7 +282,8 @@ private:
       mHaveBuffer = false;
     }
 
-    mBufferQueue = NULL;
+    mBufferProducer = NULL;
+    mBufferConsumer = NULL;
     mConsumer = NULL;
     mWaiter = NULL;
     mVirtualDisplay = NULL;

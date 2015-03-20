@@ -6,7 +6,7 @@ LOCAL_MODULE := minicap-shared
 LOCAL_MODULE_FILENAME := minicap
 
 LOCAL_SRC_FILES := \
-	mock/minicap.cpp \
+	mock/Minicap.cpp \
 
 LOCAL_C_INCLUDES := \
 	$(LOCAL_PATH)/aosp/include \

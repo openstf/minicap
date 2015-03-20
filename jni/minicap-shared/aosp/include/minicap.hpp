@@ -3,10 +3,15 @@
 
 #include <cstdint>
 
-class minicap
-{
+class Minicap {
 public:
-  enum format {
+  enum CaptureMethod {
+    METHOD_FRAMEBUFFER      = 1,
+    METHOD_SCREENSHOT       = 2,
+    METHOD_VIRTUAL_DISPLAY  = 3,
+  };
+
+  enum Format {
     FORMAT_NONE          = 0x01,
     FORMAT_CUSTOM        = 0x02,
     FORMAT_TRANSLUCENT   = 0x03,
@@ -22,14 +27,14 @@ public:
     FORMAT_UNKNOWN       = 0x00,
   };
 
-  enum orientation {
+  enum Orientation {
     ORIENTATION_0    = 0,
     ORIENTATION_90   = 1,
     ORIENTATION_180  = 2,
     ORIENTATION_270  = 3,
   };
 
-  struct display_info {
+  struct DisplayInfo {
     uint32_t width;
     uint32_t height;
     uint8_t orientation;
@@ -41,67 +46,84 @@ public:
     float size;
   };
 
-  minicap(int32_t display_id)
-    : m_display_id(display_id) {}
+  struct Frame {
+    void const* data;
+    Format format;
+    uint32_t width;
+    uint32_t height;
+    uint32_t stride;
+    uint32_t bpp;
+    size_t size;
+  };
+
+  Minicap() {}
 
   virtual
-  ~minicap() {}
+  ~Minicap() {}
 
+  // Applies changes made by setDesiredInfo() and setRealInfo(). Must be
+  // called before attempting to wait or consume frames.
   virtual bool
-  supports_push() = 0;
+  applyConfigChanges() = 0;
 
-  virtual int
-  begin_updates() = 0;
+  // Consumes a frame. Must be called after waitForFrame().
+  virtual bool
+  consumePendingFrame(Frame* frame) = 0;
 
-  virtual int
-  update() = 0;
+  // Peek behind the scenes to see which capture method is actually
+  // being used.
+  virtual CaptureMethod
+  getCaptureMethod() = 0;
 
+  // Get display ID.
+  virtual int32_t
+  getDisplayId() = 0;
+
+  // Whether there's a pending frame ready to be consumed or not. Can
+  // only return true after waitForFrame().
+  virtual bool
+  hasPendingFrame() = 0;
+
+  // Release all resources.
   virtual void
   release() = 0;
 
-  virtual void const*
-  get_pixels() = 0;
+  // Set desired information about the display. Currently, only the
+  // following properties are actually used: width, height and orientation.
+  // After the configuration has been applied, new frames should satisfy
+  // the requirements.
+  virtual bool
+  setDesiredInfo(const DisplayInfo& info) = 0;
 
-  virtual uint32_t
-  get_width() = 0;
+  // Set the display's real information. This cannot be accessed automatically
+  // due to manufacturers (mainly Samsung) having customized
+  // android::DisplayInfo. The information has to be gathered somehow and then
+  // passed on here. Currently only the following properties are actually
+  // used: width and height.
+  virtual bool
+  setRealInfo(const DisplayInfo& info) = 0;
 
-  virtual uint32_t
-  get_height() = 0;
-
-  virtual uint32_t
-  get_stride() = 0;
-
-  virtual uint32_t
-  get_bpp() = 0;
-
-  virtual size_t
-  get_size() = 0;
-
-  virtual format
-  get_format() = 0;
-
-  virtual int32_t
-  get_display_id() = 0;
-
-  virtual int
-  get_display_info(display_info* info) = 0;
-
-  virtual int
-  set_real_size(uint32_t width, uint32_t height) = 0;
-
-  virtual int
-  set_desired_projection(uint32_t width, uint32_t height, uint8_t orientation) = 0;
-
-protected:
-  uint32_t m_display_id;
+  // Returns when a new frame is available (or if there already is one). Can
+  // only be called after applyConfigChanges().
+  virtual bool
+  waitForFrame() = 0;
 };
 
-minicap*
-minicap_create(int32_t display_id);
+// Attempt to get information about the given display. This may segfault
+// on some devices due to manufacturer (mainly Samsung) customizations.
+bool
+minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info);
 
+// Creates a new Minicap instance for the current platform.
+Minicap*
+minicap_create(int32_t displayId);
+
+// Frees a Minicap instance. Don't call delete yourself as it won't have
+// access to the platform-specific modifications.
 void
-minicap_free(minicap* mc);
+minicap_free(Minicap* mc);
 
+// Starts an Android thread pool. Must be called before doing anything else.
 void
 minicap_start_thread_pool();
 

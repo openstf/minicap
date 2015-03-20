@@ -1,4 +1,4 @@
-#include "minicap.hpp"
+#include "Minicap.hpp"
 
 #include <errno.h>
 #include <unistd.h>
@@ -17,220 +17,215 @@
 #include <ui/DisplayInfo.h>
 #include <ui/PixelFormat.h>
 
-using namespace android;
+#include "mcdebug.h"
 
-class minicap_impl: public minicap
-{
+const char*
+error_name(int32_t err) {
+  switch (err) {
+  case android::NO_ERROR: // also android::OK
+    return "NO_ERROR";
+  case android::UNKNOWN_ERROR:
+    return "UNKNOWN_ERROR";
+  case android::NO_MEMORY:
+    return "NO_MEMORY";
+  case android::INVALID_OPERATION:
+    return "INVALID_OPERATION";
+  case android::BAD_VALUE:
+    return "BAD_VALUE";
+  case android::BAD_TYPE:
+    return "BAD_TYPE";
+  case android::NAME_NOT_FOUND:
+    return "NAME_NOT_FOUND";
+  case android::PERMISSION_DENIED:
+    return "PERMISSION_DENIED";
+  case android::NO_INIT:
+    return "NO_INIT";
+  case android::ALREADY_EXISTS:
+    return "ALREADY_EXISTS";
+  case android::DEAD_OBJECT: // also android::JPARKS_BROKE_IT
+    return "DEAD_OBJECT";
+  case android::FAILED_TRANSACTION:
+    return "FAILED_TRANSACTION";
+  case android::BAD_INDEX:
+    return "BAD_INDEX";
+  case android::NOT_ENOUGH_DATA:
+    return "NOT_ENOUGH_DATA";
+  case android::WOULD_BLOCK:
+    return "WOULD_BLOCK";
+  case android::TIMED_OUT:
+    return "TIMED_OUT";
+  case android::UNKNOWN_TRANSACTION:
+    return "UNKNOWN_TRANSACTION";
+  case android::FDS_NOT_ALLOWED:
+    return "FDS_NOT_ALLOWED";
+  default:
+    return "UNMAPPED_ERROR";
+  }
+}
+
+class MinicapImpl: public Minicap {
 public:
-  minicap_impl(int32_t display_id)
-    : m_display_id(display_id),
-      m_composer(ComposerService::getComposerService()),
-      m_width(0),
-      m_height(0),
-      m_format(PIXEL_FORMAT_NONE)
-  {
+  MinicapImpl(int32_t displayId)
+    : mDisplayId(displayId),
+      mComposer(android::ComposerService::getComposerService()),
+      mDesiredWidth(0),
+      mDesiredHeight(0),
+      mHavePendingFrame(false) {
   }
 
   virtual
-  ~minicap_impl()
-  {
+  ~MinicapImpl() {
     release();
   }
 
-  virtual int
-  update(uint32_t width, uint32_t height)
-  {
-    m_heap = NULL;
-    int32_t err = m_composer->captureScreen(m_display_id, &m_heap,
-      &m_width, &m_height, &m_format, width, height, 0, -1UL);
+  virtual bool
+  applyConfigChanges() {
+    return true;
+  }
 
-    if (err != NO_ERROR)
-    {
-      fprintf(stderr, "SurfaceFlingerClient::update() failed: %s (%d)\n",
-        error_name(err), err);
-      return 1;
+  virtual bool
+  consumePendingFrame(Minicap::Frame* frame) {
+    uint32_t width, height;
+    android::PixelFormat format;
+    android::status_t err;
+
+    mHeap = NULL;
+    err = mComposer->captureScreen(mDisplayId, &mHeap,
+      &width, &height, &format, mDesiredWidth, mDesiredHeight, 0, -1UL);
+
+    if (err != android::NO_ERROR) {
+      MCERROR("ComposerService::captureScreen() failed %s", error_name(err));
+      return false;
     }
 
-    return 0;
+    frame->data = mHeap->getBase();
+    frame->width = width;
+    frame->height = height;
+    frame->format = convertFormat(format);
+    frame->stride = width;
+    frame->bpp = android::bytesPerPixel(format);
+    frame->size = mHeap->getSize();
+
+    mHavePendingFrame = false;
+
+    return true;
+  }
+
+  virtual Minicap::CaptureMethod
+  getCaptureMethod() {
+    return METHOD_SCREENSHOT;
+  }
+
+  virtual int32_t
+  getDisplayId() {
+    return mDisplayId;
+  }
+
+  virtual bool
+  hasPendingFrame() {
+    return mHavePendingFrame;
   }
 
   virtual void
-  release()
-  {
-    m_heap = NULL;
+  release() {
+    mHeap = NULL;
+    mHavePendingFrame = false;
   }
 
-  virtual void const*
-  get_pixels()
-  {
-    return m_heap->getBase();
+  virtual bool
+  setDesiredInfo(const Minicap::DisplayInfo& info) {
+    mDesiredWidth = info.width;
+    mDesiredHeight = info.height;
+    return true;
   }
 
-  virtual uint32_t
-  get_width()
-  {
-    return m_width;
+  virtual bool
+  setRealInfo(const Minicap::DisplayInfo& info) {
+    return true;
   }
 
-  virtual uint32_t
-  get_height()
-  {
-    return m_height;
+  virtual bool
+  waitForFrame() {
+    mHavePendingFrame = true;
+    return true;
   }
 
-  virtual uint32_t
-  get_stride()
-  {
-    return m_width;
-  }
+private:
+  int32_t mDisplayId;
+  android::sp<android::ISurfaceComposer> mComposer;
+  android::sp<android::IMemoryHeap> mHeap;
+  uint32_t mDesiredWidth;
+  uint32_t mDesiredHeight;
+  bool mHavePendingFrame;
 
-  virtual uint32_t
-  get_bpp()
+  static Minicap::Format
+  convertFormat(android::PixelFormat format)
   {
-    return bytesPerPixel(m_format);
-  }
-
-  virtual size_t
-  get_size()
-  {
-    return m_heap->getSize();
-  }
-
-  virtual format
-  get_format()
-  {
-    switch (m_format)
-    {
-    case PIXEL_FORMAT_NONE:
+    switch (format) {
+    case android::PIXEL_FORMAT_NONE:
       return FORMAT_NONE;
-    case PIXEL_FORMAT_CUSTOM:
+    case android::PIXEL_FORMAT_CUSTOM:
       return FORMAT_CUSTOM;
-    case PIXEL_FORMAT_TRANSLUCENT:
+    case android::PIXEL_FORMAT_TRANSLUCENT:
       return FORMAT_TRANSLUCENT;
-    case PIXEL_FORMAT_TRANSPARENT:
+    case android::PIXEL_FORMAT_TRANSPARENT:
       return FORMAT_TRANSPARENT;
-    case PIXEL_FORMAT_OPAQUE:
+    case android::PIXEL_FORMAT_OPAQUE:
       return FORMAT_OPAQUE;
-    case PIXEL_FORMAT_RGBA_8888:
+    case android::PIXEL_FORMAT_RGBA_8888:
       return FORMAT_RGBA_8888;
-    case PIXEL_FORMAT_RGBX_8888:
+    case android::PIXEL_FORMAT_RGBX_8888:
       return FORMAT_RGBX_8888;
-    case PIXEL_FORMAT_RGB_888:
+    case android::PIXEL_FORMAT_RGB_888:
       return FORMAT_RGB_888;
-    case PIXEL_FORMAT_RGB_565:
+    case android::PIXEL_FORMAT_RGB_565:
       return FORMAT_RGB_565;
-    case PIXEL_FORMAT_BGRA_8888:
+    case android::PIXEL_FORMAT_BGRA_8888:
       return FORMAT_BGRA_8888;
-    case PIXEL_FORMAT_RGBA_5551:
+    case android::PIXEL_FORMAT_RGBA_5551:
       return FORMAT_RGBA_5551;
-    case PIXEL_FORMAT_RGBA_4444:
+    case android::PIXEL_FORMAT_RGBA_4444:
       return FORMAT_RGBA_4444;
     default:
       return FORMAT_UNKNOWN;
     }
   }
-
-  virtual int32_t
-  get_display_id()
-  {
-    return m_display_id;
-  }
-
-  virtual int
-  get_display_info(display_info* info)
-  {
-    DisplayInfo dinfo;
-    status_t err = SurfaceComposerClient::getDisplayInfo(m_display_id, &dinfo);
-
-    if (err != NO_ERROR)
-    {
-      fprintf(stderr, "SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n",
-        error_name(err), err);
-      return 1;
-    }
-
-    info->width = dinfo.w;
-    info->height = dinfo.h;
-    info->orientation = dinfo.orientation;
-    info->fps = dinfo.fps;
-    info->density = dinfo.density;
-    info->xdpi = dinfo.xdpi;
-    info->ydpi = dinfo.ydpi;
-    info->secure = false;
-    info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
-
-    return 0;
-  }
-
-private:
-  int32_t m_display_id;
-  sp<ISurfaceComposer> m_composer;
-  sp<IMemoryHeap> m_heap;
-  uint32_t m_width;
-  uint32_t m_height;
-  PixelFormat m_format;
-
-  const char*
-  error_name(int32_t err)
-  {
-    switch (err)
-    {
-    case android::NO_ERROR: // also android::OK
-      return "NO_ERROR";
-    case android::UNKNOWN_ERROR:
-      return "UNKNOWN_ERROR";
-    case android::NO_MEMORY:
-      return "NO_MEMORY";
-    case android::INVALID_OPERATION:
-      return "INVALID_OPERATION";
-    case android::BAD_VALUE:
-      return "BAD_VALUE";
-    case android::BAD_TYPE:
-      return "BAD_TYPE";
-    case android::NAME_NOT_FOUND:
-      return "NAME_NOT_FOUND";
-    case android::PERMISSION_DENIED:
-      return "PERMISSION_DENIED";
-    case android::NO_INIT:
-      return "NO_INIT";
-    case android::ALREADY_EXISTS:
-      return "ALREADY_EXISTS";
-    case android::DEAD_OBJECT: // also android::JPARKS_BROKE_IT
-      return "DEAD_OBJECT";
-    case android::FAILED_TRANSACTION:
-      return "FAILED_TRANSACTION";
-    case android::BAD_INDEX:
-      return "BAD_INDEX";
-    case android::NOT_ENOUGH_DATA:
-      return "NOT_ENOUGH_DATA";
-    case android::WOULD_BLOCK:
-      return "WOULD_BLOCK";
-    case android::TIMED_OUT:
-      return "TIMED_OUT";
-    case android::UNKNOWN_TRANSACTION:
-      return "UNKNOWN_TRANSACTION";
-    case android::FDS_NOT_ALLOWED:
-      return "FDS_NOT_ALLOWED";
-    default:
-      return "UNMAPPED_ERROR";
-    }
-  }
 };
 
-minicap*
-minicap_create(int32_t display_id)
-{
-  return new minicap_impl(display_id);
+bool
+minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
+  android::DisplayInfo dinfo;
+  android::status_t err = android::SurfaceComposerClient::getDisplayInfo(displayId, &dinfo);
+
+  if (err != android::NO_ERROR) {
+    MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", error_name(err), err);
+    return false;
+  }
+
+  info->width = dinfo.w;
+  info->height = dinfo.h;
+  info->orientation = dinfo.orientation;
+  info->fps = dinfo.fps;
+  info->density = dinfo.density;
+  info->xdpi = dinfo.xdpi;
+  info->ydpi = dinfo.ydpi;
+  info->secure = false;
+  info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
+
+  return 0;
+}
+
+Minicap*
+minicap_create(int32_t displayId) {
+  return new MinicapImpl(displayId);
 }
 
 void
-minicap_free(minicap* mc)
-{
+minicap_free(Minicap* mc) {
   delete mc;
 }
 
 void
-minicap_start_thread_pool()
-{
-  ProcessState::self()->startThreadPool();
+minicap_start_thread_pool() {
+  android::ProcessState::self()->startThreadPool();
 }
