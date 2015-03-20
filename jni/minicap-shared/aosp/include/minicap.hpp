@@ -56,6 +56,14 @@ public:
     size_t size;
   };
 
+  struct FrameAvailableListener {
+    virtual
+    ~FrameAvailableListener() {}
+
+    virtual void
+    onFrameAvailable() = 0;
+  };
+
   Minicap() {}
 
   virtual
@@ -79,14 +87,14 @@ public:
   virtual int32_t
   getDisplayId() = 0;
 
-  // Whether there's a pending frame ready to be consumed or not. Can
-  // only return true after waitForFrame().
-  virtual bool
-  hasPendingFrame() = 0;
-
   // Release all resources.
   virtual void
   release() = 0;
+
+  // Releases a consumed frame so that it can be reused by Android again.
+  // Must be called before consumePendingFrame() is called again.
+  virtual void
+  releaseConsumedFrame(Frame* frame) = 0;
 
   // Set desired information about the display. Currently, only the
   // following properties are actually used: width, height and orientation.
@@ -95,6 +103,10 @@ public:
   virtual bool
   setDesiredInfo(const DisplayInfo& info) = 0;
 
+  // Sets the frame available listener.
+  virtual void
+  setFrameAvailableListener(FrameAvailableListener* listener) = 0;
+
   // Set the display's real information. This cannot be accessed automatically
   // due to manufacturers (mainly Samsung) having customized
   // android::DisplayInfo. The information has to be gathered somehow and then
@@ -102,11 +114,6 @@ public:
   // used: width and height.
   virtual bool
   setRealInfo(const DisplayInfo& info) = 0;
-
-  // Returns when a new frame is available (or if there already is one). Can
-  // only be called after applyConfigChanges().
-  virtual bool
-  waitForFrame() = 0;
 };
 
 // Attempt to get information about the given display. This may segfault
