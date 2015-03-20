@@ -21,7 +21,7 @@
 
 #include "mcdebug.h"
 
-const char*
+static const char*
 error_name(int32_t err) {
   switch (err) {
   case android::NO_ERROR: // also android::OK
@@ -71,8 +71,7 @@ public:
     : mDisplayId(displayId),
       mComposer(android::ComposerService::getComposerService()),
       mDesiredWidth(0),
-      mDesiredHeight(0),
-      mHavePendingFrame(false) {
+      mDesiredHeight(0) {
   }
 
   virtual
@@ -108,8 +107,6 @@ public:
     frame->bpp = android::bytesPerPixel(format);
     frame->size = mHeap->getSize();
 
-    mHavePendingFrame = false;
-
     return true;
   }
 
@@ -123,15 +120,15 @@ public:
     return mDisplayId;
   }
 
-  virtual bool
-  hasPendingFrame() {
-    return mHavePendingFrame;
-  }
-
   virtual void
   release() {
     mHeap = NULL;
-    mHavePendingFrame = false;
+  }
+
+  virtual void
+  releaseConsumedFrame(Minicap::Frame* /* frame */) {
+    mHeap = NULL;
+    mUserFrameAvailableListener->onFrameAvailable();
   }
 
   virtual bool
@@ -141,14 +138,14 @@ public:
     return true;
   }
 
-  virtual bool
-  setRealInfo(const Minicap::DisplayInfo& info) {
-    return true;
+  virtual void
+  setFrameAvailableListener(Minicap::FrameAvailableListener* listener) {
+    mUserFrameAvailableListener = listener;
+    mUserFrameAvailableListener->onFrameAvailable();
   }
 
   virtual bool
-  waitForFrame() {
-    mHavePendingFrame = true;
+  setRealInfo(const Minicap::DisplayInfo& info) {
     return true;
   }
 
@@ -158,11 +155,10 @@ private:
   android::sp<android::IMemoryHeap> mHeap;
   uint32_t mDesiredWidth;
   uint32_t mDesiredHeight;
-  bool mHavePendingFrame;
+  Minicap::FrameAvailableListener* mUserFrameAvailableListener;
 
   static Minicap::Format
-  convertFormat(android::PixelFormat format)
-  {
+  convertFormat(android::PixelFormat format) {
     switch (format) {
     case android::PIXEL_FORMAT_NONE:
       return FORMAT_NONE;
@@ -214,7 +210,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   info->secure = false;
   info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
 
-  return 0;
+  return true;
 }
 
 Minicap*

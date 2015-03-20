@@ -23,9 +23,6 @@
 #include <ui/PixelFormat.h>
 #include <ui/Rect.h>
 
-#include <utils/Mutex.h>
-#include <utils/Condition.h>
-
 #include "mcdebug.h"
 
 static const char*
@@ -72,30 +69,18 @@ error_name(int32_t err) {
   }
 }
 
-class FrameWaiter: public android::ConsumerBase::FrameAvailableListener {
+class FrameProxy: public android::ConsumerBase::FrameAvailableListener {
 public:
-  FrameWaiter(): mPendingFrames(0) {
-  }
-
-  void waitForFrame() {
-    android::Mutex::Autolock lock(mMutex);
-    while (mPendingFrames == 0) {
-        mCondition.wait(mMutex);
-    }
-    mPendingFrames--;
+  FrameProxy(Minicap::FrameAvailableListener* listener): mUserListener(listener) {
   }
 
   virtual void
   onFrameAvailable() {
-    android::Mutex::Autolock lock(mMutex);
-    mPendingFrames++;
-    mCondition.signal();
+    mUserListener->onFrameAvailable();
   }
 
 private:
-  int mPendingFrames;
-  android::Mutex mMutex;
-  android::Condition mCondition;
+  Minicap::FrameAvailableListener* mUserListener;
 };
 
 class MinicapImpl: public Minicap
@@ -109,7 +94,6 @@ public:
       mDesiredHeight(0),
       mDesiredOrientation(0),
       mHaveBuffer(false),
-      mHavePendingFrame(false),
       mHaveRunningDisplay(false) {
   }
 
@@ -147,7 +131,6 @@ public:
     frame->size = mBuffer.stride * mBuffer.height * frame->bpp;
 
     mHaveBuffer = true;
-    mHavePendingFrame = false;
 
     return true;
   }
@@ -162,14 +145,17 @@ public:
     return mDisplayId;
   }
 
-  virtual bool
-  hasPendingFrame() {
-    return mHavePendingFrame;
-  }
-
   virtual void
   release() {
     destroyVirtualDisplay();
+  }
+
+  virtual void
+  releaseConsumedFrame(Minicap::Frame* /* frame */) {
+    if (mHaveBuffer) {
+      mConsumer->unlockBuffer(mBuffer);
+      mHaveBuffer = false;
+    }
   }
 
   virtual bool
@@ -180,23 +166,15 @@ public:
     return true;
   }
 
+  virtual void
+  setFrameAvailableListener(Minicap::FrameAvailableListener* listener) {
+    mUserFrameAvailableListener = listener;
+  }
+
   virtual bool
   setRealInfo(const Minicap::DisplayInfo& info) {
     mRealWidth = info.width;
     mRealHeight = info.height;
-    return true;
-  }
-
-  virtual bool
-  waitForFrame() {
-    if (mHaveBuffer) {
-      mConsumer->unlockBuffer(mBuffer);
-      mHaveBuffer = false;
-    }
-
-    mWaiter->waitForFrame();
-    mHavePendingFrame = true;
-
     return true;
   }
 
@@ -210,9 +188,9 @@ private:
   android::sp<android::BufferQueue> mBufferQueue;
   android::sp<android::CpuConsumer> mConsumer;
   android::sp<android::IBinder> mVirtualDisplay;
-  android::sp<FrameWaiter> mWaiter;
+  android::sp<FrameProxy> mFrameProxy;
+  Minicap::FrameAvailableListener* mUserFrameAvailableListener;
   bool mHaveBuffer;
-  bool mHavePendingFrame;
   bool mHaveRunningDisplay;
   android::CpuConsumer::LockedBuffer mBuffer;
 
@@ -254,8 +232,8 @@ private:
     mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating frame waiter");
-    mWaiter = new FrameWaiter();
-    mConsumer->setFrameAvailableListener(mWaiter);
+    mFrameProxy = new FrameProxy(mUserFrameAvailableListener);
+    mConsumer->setFrameAvailableListener(mFrameProxy);
 
     MCINFO("Publishing virtual display");
     android::SurfaceComposerClient::openGlobalTransaction();
@@ -283,10 +261,9 @@ private:
 
     mBufferQueue = NULL;
     mConsumer = NULL;
-    mWaiter = NULL;
+    mFrameProxy = NULL;
     mVirtualDisplay = NULL;
 
-    mHavePendingFrame = false;
     mHaveRunningDisplay = false;
   }
 
