@@ -79,6 +79,7 @@ public:
 
   virtual bool
   applyConfigChanges() {
+    mUserFrameAvailableListener->onFrameAvailable();
     return true;
   }
 
@@ -139,7 +140,6 @@ public:
   virtual void
   setFrameAvailableListener(Minicap::FrameAvailableListener* listener) {
     mUserFrameAvailableListener = listener;
-    mUserFrameAvailableListener->onFrameAvailable();
   }
 
   virtual bool
