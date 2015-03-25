@@ -241,7 +241,7 @@ private:
 
     mHaveRunningDisplay = true;
 
-    return 0;
+    return true;
   }
 
   void
