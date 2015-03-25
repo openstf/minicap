@@ -1,5 +1,5 @@
 this_dir = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-SOURCES := Android.mk include/minicap.hpp
+SOURCES := Android.mk include/Minicap.hpp
 
 all: \
 	libs/android-10/armeabi-v7a/minicap.so \
