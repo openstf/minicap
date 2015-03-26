@@ -1,297 +1,213 @@
 #include <getopt.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+#include <condition_variable>
+#include <chrono>
+#include <future>
 #include <iostream>
-#include <sstream>
-#include <stdexcept>
+#include <mutex>
+#include <thread>
 
-#include <boost/timer/timer.hpp>
-
-#include <websocketpp/config/asio_no_tls.hpp>
-#include <websocketpp/server.hpp>
+#include <Minicap.hpp>
 
 #include "util/debug.h"
-#include "capster.hpp"
-#include "jpg_encoder.hpp"
+#include "JpgEncoder.hpp"
+#include "SimpleServer.hpp"
 
-#define DEFAULT_DISPLAY_ID 0
-#define DEFAULT_WEBSOCKET_PORT 9002
-#define DEFAULT_QUALITY 80
+#define DEFAULT_SOCKET_NAME "minicap"
+#define DEFAULT_JPG_QUALITY 80
 
-typedef websocketpp::server<websocketpp::config::asio> server;
-
-using websocketpp::connection_hdl;
-using websocketpp::lib::placeholders::_1;
-using websocketpp::lib::placeholders::_2;
-using websocketpp::lib::bind;
-
-static void usage(const char* pname)
+static void
+usage(const char* pname)
 {
   fprintf(stderr,
-    "Usage: %s [-h] [-d <display>] [-i] [-s] [-p <port>]\n"
-    "  -d <display>:  Display ID. (%d)\n"
-    "  -D <size>:     Display size. Must be given due to binary incompatibilities.\n"
-    "  -p <port>:     WebSocket server port. (%d)\n"
-    "  -i:            Get display information in JSON format.\n"
-    "  -s:            Take a screenshot and output it to stdout.\n"
-    "  -b <size>:     Benchmark the given size.\n"
-    "  -h:            Show help.\n",
-    pname, DEFAULT_DISPLAY_ID, DEFAULT_WEBSOCKET_PORT
+    "Usage: %s [-h] [-n <name>]\n"
+    "  -n <name>:   Change the name of of the abtract unix domain socket. (%s)\n"
+    "  -h:          Show help.\n",
+    pname, DEFAULT_SOCKET_NAME
   );
 }
 
-class capster_server {
+class FrameWaiter: public Minicap::FrameAvailableListener {
 public:
-  capster_server(capster& capster, jpg_encoder& enc)
-    : m_capster(capster),
-      m_encoder(enc) {
-    // Don't log
-    m_server.set_access_channels(websocketpp::log::alevel::none);
-
-    // Initialize Asio Transport
-    m_server.init_asio();
-    m_server.set_reuse_addr(true);
-
-    // Register handler callbacks
-    m_server.set_socket_init_handler(bind(&capster_server::on_socket_init, this, ::_1, ::_2));
-    m_server.set_message_handler(bind(&capster_server::on_message, this, ::_1, ::_2));
+  FrameWaiter()
+    : mPendingFrames(0),
+      mTimeout(std::chrono::milliseconds(100)),
+      mStopped(false) {
   }
 
-  void run(uint16_t port) {
-    // listen on specified port
-    m_server.listen(port);
+  bool
+  waitForFrame() {
+    std::unique_lock<std::mutex> lock(mMutex);
 
-    // Start the server accept loop
-    m_server.start_accept();
-
-    // Start the ASIO io_service run loop
-    try {
-      m_server.run();
-    } catch (const std::exception & e) {
-      std::cout << e.what() << std::endl;
-    } catch (websocketpp::lib::error_code e) {
-      std::cout << e.message() << std::endl;
-    } catch (...) {
-      std::cout << "other exception" << std::endl;
+    while (!mStopped) {
+      if (mCondition.wait_for(lock, mTimeout, [this]{return mPendingFrames > 0;})) {
+        mPendingFrames -= 1;
+        return !mStopped;
+      }
     }
+
+    return false;
   }
 
-  void on_socket_init(connection_hdl, boost::asio::ip::tcp::socket &s) {
-    boost::asio::ip::tcp::no_delay option(true);
-    s.set_option(option);
+  void
+  onFrameAvailable() {
+    std::unique_lock<std::mutex> lock(mMutex);
+    mPendingFrames += 1;
+    mCondition.notify_one();
   }
 
-  void on_message(connection_hdl hdl, server::message_ptr msg) {
-    std::istringstream in(msg->get_payload());
-
-    unsigned int width, height, orientation;
-    in >> width >> height >> orientation;
-
-    m_capster.set_desired_projection(width, height, orientation);
-
-    try {
-      if (m_capster.update() != 0) {
-        m_server.send(hdl, "secure_on", websocketpp::frame::opcode::text);
-      }
-      else {
-        m_encoder.encode(m_capster, DEFAULT_QUALITY);
-        m_server.send(hdl, m_encoder.get_encoded_data(), m_encoder.get_encoded_size(),
-          websocketpp::frame::opcode::BINARY);
-      }
-    }
-    catch (websocketpp::exception& e) {
-      if (e.code() == websocketpp::error::bad_connection) {
-        // The connection doesn't exist anymore.
-      }
-      else {
-        std::cout << e.what() << std::endl;
-      }
-    }
+  void
+  cancel() {
+    mStopped = true;
   }
 
 private:
-  server m_server;
-  capster& m_capster;
-  jpg_encoder& m_encoder;
+  std::mutex mMutex;
+  std::condition_variable mCondition;
+  std::chrono::milliseconds mTimeout;
+  int mPendingFrames;
+  bool mStopped;
 };
 
-int main(int argc, char* argv[]) {
+int
+pump(int fd, unsigned char* data, size_t length) {
+  do {
+    int wrote = write(fd, data, length);
+
+    if (wrote < 0) {
+      return wrote;
+    }
+
+    data += wrote;
+    length -= wrote;
+  }
+  while (length > 0);
+
+  return 0;
+}
+
+int
+main(int argc, char* argv[]) {
+  const char* pname = argv[0];
+  const char* sockname = DEFAULT_SOCKET_NAME;
+  unsigned int quality = DEFAULT_JPG_QUALITY;
+
+  // Disable STDOUT buffering.
+  setbuf(stdout, NULL);
+
+  // Start Android's thread pool so that it will be able to serve our requests.
   minicap_start_thread_pool();
 
-  const char* pname = argv[0];
-  uint32_t display_id = DEFAULT_DISPLAY_ID;
-  uint16_t port = DEFAULT_WEBSOCKET_PORT;
-  bool show_info = false;
-  bool take_screenshot = false;
-  bool run_benchmark = false;
-  unsigned int benchmark_w, benchmark_h;
-  unsigned int display_w = 0, display_h = 0, display_o = 0;
+  // Set real display size.
+  Minicap::DisplayInfo realInfo;
+  realInfo.width = 1080;
+  realInfo.height = 1920;
 
-  int opt;
-  while ((opt = getopt(argc, argv, "d:D:p:isb:h")) != -1) {
-    switch (opt) {
-      case 'd':
-        display_id = atoi(optarg);
-        break;
-      case 'D': {
-        char* cursor;
-        display_w = strtol(optarg, &cursor, 10);
-        display_h = strtol(cursor + 1, &cursor, 10);
-        break;
-      }
-      case 'p':
-        port = atoi(optarg);
-        break;
-      case 'i':
-        show_info = true;
-        break;
-        break;
-      case 's':
-        take_screenshot = true;
-        break;
-      case 'b': {
-        char* cursor;
-        run_benchmark = true;
-        benchmark_w = strtol(optarg, &cursor, 10);
-        benchmark_h = strtol(cursor + 1, &cursor, 10);
-        break;
-      }
-      case '?':
-        usage(pname);
-        return EXIT_FAILURE;
-      case 'h':
-        usage(pname);
-        return EXIT_SUCCESS;
-    }
-  }
+  // Figure out desired display size.
+  Minicap::DisplayInfo desiredInfo;
+  desiredInfo.width = 720;
+  desiredInfo.height = 1280;
+  desiredInfo.orientation = 0;
 
-  if (show_info) {
-    try {
-      minicap::display_info info = capster::get_display_info(display_id);
+  // Leave a 4-byte padding to the encoder so that we can inject the size
+  // to the same buffer.
+  JpgEncoder encoder(4, 0);
+  FrameWaiter waiter;
+  Minicap::Frame frame;
+  bool haveFrame = false;
 
-      int rotation;
-      switch (info.orientation) {
-      case minicap::ORIENTATION_0:
-        rotation = 0;
-        break;
-      case minicap::ORIENTATION_90:
-        rotation = 90;
-        break;
-      case minicap::ORIENTATION_180:
-        rotation = 180;
-        break;
-      case minicap::ORIENTATION_270:
-        rotation = 270;
-        break;
-      }
+  // Server config.
+  SimpleServer server;
 
-      std::cout.precision(2);
-      std::cout.setf(std::ios_base::fixed, std::ios_base::floatfield);
-
-      std::cout << "{"                                         << std::endl
-                << "    \"id\": "       << display_id   << "," << std::endl
-                << "    \"width\": "    << info.width   << "," << std::endl
-                << "    \"height\": "   << info.height  << "," << std::endl
-                << "    \"xdpi\": "     << info.xdpi    << "," << std::endl
-                << "    \"ydpi\": "     << info.ydpi    << "," << std::endl
-                << "    \"size\": "     << info.size    << "," << std::endl
-                << "    \"density\": "  << info.density << "," << std::endl
-                << "    \"fps\": "      << info.fps     << "," << std::endl
-                << "    \"secure\": "   << (info.secure ? "true" : "false") << "," << std::endl
-                << "    \"rotation\": " << rotation            << std::endl
-                << "}"                                         << std::endl;
-
-      return EXIT_SUCCESS;
-    }
-    catch (std::exception & e) {
-      std::cerr << "ERROR: " << e.what() << std::endl;
-      return EXIT_FAILURE;
-    }
-  }
-
-  if (display_w == 0 || display_h == 0) {
-    std::cerr << "ERROR: display size must be given" << std::endl;
+  // Set up minicap.
+  Minicap* minicap = minicap_create(0);
+  if (minicap == NULL) {
     return EXIT_FAILURE;
   }
 
-  if (take_screenshot) {
-    try {
-      jpg_encoder enc(display_w, display_h);
-
-      capster capster_instance(display_id);
-
-      capster_instance.set_real_size(display_w, display_h);
-      capster_instance.set_desired_projection(display_w, display_h, display_o);
-
-      capster_instance.begin_updates();
-
-      capster_instance.update();
-
-      enc.encode(capster_instance, DEFAULT_QUALITY);
-
-      write(STDOUT_FILENO, enc.get_encoded_data(), enc.get_encoded_size());
-
-      return EXIT_SUCCESS;
-    }
-    catch (std::exception & e) {
-      std::cerr << "ERROR: " << e.what() << std::endl;
-      return EXIT_FAILURE;
-    }
+  if (!minicap->setRealInfo(realInfo)) {
+    MCERROR("Minicap did not accept real display info");
+    goto disaster;
   }
 
-  if (run_benchmark) {
-    try {
-      capster capster_instance(display_id);
+  if (!minicap->setDesiredInfo(desiredInfo)) {
+    MCERROR("Minicap did not accept desired display info");
+    goto disaster;
+  }
 
-      int times = 100;
+  minicap->setFrameAvailableListener(&waiter);
 
-      std::cerr << "Running benchmark on size " << benchmark_w << "x"
-        << benchmark_h << " " << times << " times" << std::endl;
+  if (!minicap->applyConfigChanges()) {
+    MCERROR("Unable to start minicap with current config");
+    goto disaster;
+  }
 
-      jpg_encoder enc(display_w, display_h);
+  if (!encoder.reserveData(realInfo.width, realInfo.height)) {
+    MCERROR("Unable to reserve data for JPG encoder");
+    goto disaster;
+  }
 
-      capster_instance.set_real_size(display_w, display_h);
-      capster_instance.set_desired_projection(benchmark_w, benchmark_h, display_o);
+  if (!server.start(sockname)) {
+    MCERROR("Unable to start server on namespace '%s'", sockname);
+    goto disaster;
+  }
 
-      capster_instance.begin_updates();
+  int fd;
+  while ((fd = server.accept()) > 0) {
+    MCINFO("New client connection");
 
-      boost::timer::auto_cpu_timer t;
-
-      while (times--) {
-        if (capster_instance.update() != 0) {
-          throw std::runtime_error("Unable to access screen");
-        }
-        else {
-          enc.encode(capster_instance, DEFAULT_QUALITY);
-        }
+    while (waiter.waitForFrame()) {
+      if (haveFrame) {
+        minicap->releaseConsumedFrame(&frame);
+        haveFrame = false;
       }
 
-      return EXIT_SUCCESS;
+      if (!minicap->consumePendingFrame(&frame)) {
+        MCERROR("Unable to consume pending frame");
+        goto disaster;
+      }
+
+      haveFrame = true;
+
+      if (!encoder.encode(&frame, quality)) {
+        MCERROR("Unable to encode frame");
+        goto disaster;
+      }
+
+      unsigned char* data = encoder.getEncodedData() - 4;
+      size_t size = encoder.getEncodedSize();
+
+      data[0] = (size & 0x000000FF) >> 0;
+      data[1] = (size & 0x0000FF00) >> 8;
+      data[2] = (size & 0x00FF0000) >> 16;
+      data[3] = (size & 0xFF000000) >> 24;
+
+      if (pump(fd, data, size + 4) < 0) {
+        break;
+      }
     }
-    catch (std::exception & e) {
-      std::cerr << "ERROR: " << e.what() << std::endl;
-      return EXIT_FAILURE;
-    }
+
+    MCINFO("Closing client connection");
+
+    close(fd);
   }
 
-  try {
-    jpg_encoder enc(display_w, display_h);
-
-    capster capster_instance(display_id);
-
-    capster_instance.set_real_size(display_w, display_h);
-    capster_instance.set_desired_projection(display_w / 2, display_h / 2, display_o);
-
-    capster_instance.begin_updates();
-
-    capster_server server_instance(capster_instance, enc);
-
-    // Run the asio loop with the main thread
-    server_instance.run(port);
-
-    return EXIT_SUCCESS;
+  if (haveFrame) {
+    minicap->releaseConsumedFrame(&frame);
   }
-  catch (std::exception & e) {
-    std::cout << "ERROR: " << e.what() << std::endl;
-    return EXIT_FAILURE;
+
+  minicap_free(minicap);
+
+  return EXIT_SUCCESS;
+
+disaster:
+  if (haveFrame) {
+    minicap->releaseConsumedFrame(&frame);
   }
+
+  minicap_free(minicap);
+
+  return EXIT_FAILURE;
 }

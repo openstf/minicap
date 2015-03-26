@@ -11,7 +11,7 @@ public:
 
   ~JpgEncoder();
 
-  int
+  bool
   encode(Minicap::Frame* frame, unsigned int quality);
 
   int
@@ -20,7 +20,7 @@ public:
   unsigned char*
   getEncodedData();
 
-  int
+  bool
   reserveData(uint32_t width, uint32_t height);
 
 private:

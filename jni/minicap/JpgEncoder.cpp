@@ -18,11 +18,11 @@ JpgEncoder::~JpgEncoder() {
   tjFree(mEncodedData);
 }
 
-int
+bool
 JpgEncoder::encode(Minicap::Frame* frame, unsigned int quality) {
   unsigned char* offset = getEncodedData();
 
-  return tjCompress2(
+  return 0 == tjCompress2(
     mTjHandle,
     (unsigned char*) frame->data,
     frame->width,
@@ -47,7 +47,7 @@ JpgEncoder::getEncodedData() {
   return mEncodedData + mPrePadding;
 }
 
-int
+bool
 JpgEncoder::reserveData(uint32_t width, uint32_t height) {
   if (width == mMaxWidth && height == mMaxHeight) {
     return 0;
@@ -66,13 +66,13 @@ JpgEncoder::reserveData(uint32_t width, uint32_t height) {
   mEncodedData = tjAlloc(maxSize);
 
   if (mEncodedData == NULL) {
-    return 1;
+    return false;
   }
 
   mMaxWidth = width;
   mMaxHeight = height;
 
-  return 0;
+  return true;
 }
 
 int
