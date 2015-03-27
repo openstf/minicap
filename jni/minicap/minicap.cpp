@@ -210,7 +210,7 @@ main(int argc, char* argv[]) {
   banner[1] = (unsigned char) BANNER_SIZE;
   putUInt32LE(banner + 2,  realInfo.width);
   putUInt32LE(banner + 6,  realInfo.height);
-  putUInt32LE(banner + 10,  desiredInfo.width);
+  putUInt32LE(banner + 10, desiredInfo.width);
   putUInt32LE(banner + 14, desiredInfo.height);
   banner[18] = (unsigned char) desiredInfo.orientation;
 
