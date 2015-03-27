@@ -14,6 +14,7 @@
 #include "util/debug.h"
 #include "JpgEncoder.hpp"
 #include "SimpleServer.hpp"
+#include "Projection.hpp"
 
 #define DEFAULT_SOCKET_NAME "minicap"
 #define DEFAULT_JPG_QUALITY 80
@@ -23,8 +24,9 @@ usage(const char* pname)
 {
   fprintf(stderr,
     "Usage: %s [-h] [-n <name>]\n"
-    "  -n <name>:   Change the name of of the abtract unix domain socket. (%s)\n"
-    "  -h:          Show help.\n",
+    "  -n <name>:        Change the name of of the abtract unix domain socket. (%s)\n"
+    "  -P <projection>:  Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
+    "  -h:               Show help.\n",
     pname, DEFAULT_SOCKET_NAME
   );
 }
@@ -93,6 +95,38 @@ main(int argc, char* argv[]) {
   const char* pname = argv[0];
   const char* sockname = DEFAULT_SOCKET_NAME;
   unsigned int quality = DEFAULT_JPG_QUALITY;
+  Projection proj;
+
+  int opt;
+  while ((opt = getopt(argc, argv, "n:P:h")) != -1) {
+    switch (opt) {
+    case 'n':
+      sockname = optarg;
+      break;
+    case 'P': {
+      Projection::Parser parser;
+      if (!parser.parse(proj, optarg, optarg + strlen(optarg))) {
+        std::cerr << "ERROR: invalid format for -P, need <w>x<h>@<w>x<h>/{0|90|180|270}" << std::endl;
+        return EXIT_FAILURE;
+      }
+      break;
+    }
+    case 'h':
+      usage(pname);
+      return EXIT_SUCCESS;
+    case '?':
+    default:
+      usage(pname);
+      return EXIT_FAILURE;
+    }
+  }
+
+  if (!proj.valid()) {
+    std::cerr << "ERROR: missing or invalid -P" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  std::cerr << "INFO: Using projection " << proj << std::endl;
 
   // Disable STDOUT buffering.
   setbuf(stdout, NULL);
@@ -102,14 +136,14 @@ main(int argc, char* argv[]) {
 
   // Set real display size.
   Minicap::DisplayInfo realInfo;
-  realInfo.width = 1080;
-  realInfo.height = 1920;
+  realInfo.width = proj.realWidth;
+  realInfo.height = proj.realHeight;
 
   // Figure out desired display size.
   Minicap::DisplayInfo desiredInfo;
-  desiredInfo.width = 720;
-  desiredInfo.height = 1280;
-  desiredInfo.orientation = 0;
+  desiredInfo.width = proj.virtualWidth;
+  desiredInfo.height = proj.virtualHeight;
+  desiredInfo.orientation = proj.rotation;
 
   // Leave a 4-byte padding to the encoder so that we can inject the size
   // to the same buffer.
