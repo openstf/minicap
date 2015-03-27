@@ -16,8 +16,17 @@
 #include "SimpleServer.hpp"
 #include "Projection.hpp"
 
+#define BANNER_VERSION 1
+#define BANNER_SIZE 20
+
 #define DEFAULT_SOCKET_NAME "minicap"
 #define DEFAULT_JPG_QUALITY 80
+
+enum {
+  QUIRK_DUMB        = 1,
+  QUIRK_PREROTATED  = 2,
+  QUIRK_TEAR        = 4,
+};
 
 static void
 usage(const char* pname)
@@ -88,6 +97,13 @@ pump(int fd, unsigned char* data, size_t length) {
   while (length > 0);
 
   return 0;
+}
+
+int putUInt32LE(unsigned char* data, int value) {
+  data[0] = (value & 0x000000FF) >> 0;
+  data[1] = (value & 0x0000FF00) >> 8;
+  data[2] = (value & 0x00FF0000) >> 16;
+  data[3] = (value & 0xFF000000) >> 24;
 }
 
 int
@@ -188,9 +204,36 @@ main(int argc, char* argv[]) {
     goto disaster;
   }
 
+  // Prepare banner for clients.
+  unsigned char banner[BANNER_SIZE];
+  banner[0] = (unsigned char) BANNER_VERSION;
+  banner[1] = (unsigned char) BANNER_SIZE;
+  putUInt32LE(banner + 2,  realInfo.width);
+  putUInt32LE(banner + 6,  realInfo.height);
+  putUInt32LE(banner + 10,  desiredInfo.width);
+  putUInt32LE(banner + 14, desiredInfo.height);
+  banner[18] = (unsigned char) desiredInfo.orientation;
+
+  switch (minicap->getCaptureMethod()) {
+  case Minicap::METHOD_FRAMEBUFFER:
+    banner[19] = QUIRK_DUMB | QUIRK_TEAR;
+    break;
+  case Minicap::METHOD_SCREENSHOT:
+    banner[19] = QUIRK_DUMB;
+    break;
+  case Minicap::METHOD_VIRTUAL_DISPLAY:
+    banner[19] = QUIRK_PREROTATED;
+    break;
+  }
+
   int fd;
   while ((fd = server.accept()) > 0) {
     MCINFO("New client connection");
+
+    if (pump(fd, banner, BANNER_SIZE) < 0) {
+      close(fd);
+      continue;
+    }
 
     while (waiter.waitForFrame()) {
       if (haveFrame) {
@@ -213,10 +256,7 @@ main(int argc, char* argv[]) {
       unsigned char* data = encoder.getEncodedData() - 4;
       size_t size = encoder.getEncodedSize();
 
-      data[0] = (size & 0x000000FF) >> 0;
-      data[1] = (size & 0x0000FF00) >> 8;
-      data[2] = (size & 0x00FF0000) >> 16;
-      data[3] = (size & 0xFF000000) >> 24;
+      putUInt32LE(data, size);
 
       if (pump(fd, data, size + 4) < 0) {
         break;
