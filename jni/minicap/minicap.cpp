@@ -1,7 +1,10 @@
+#include <fcntl.h>
 #include <getopt.h>
+#include <linux/fb.h>
 #include <stdlib.h>
 #include <unistd.h>
 
+#include <cmath>
 #include <condition_variable>
 #include <chrono>
 #include <future>
@@ -20,6 +23,7 @@
 #define BANNER_SIZE 20
 
 #define DEFAULT_SOCKET_NAME "minicap"
+#define DEFAULT_DISPLAY_ID 0
 #define DEFAULT_JPG_QUALITY 80
 
 enum {
@@ -33,10 +37,13 @@ usage(const char* pname)
 {
   fprintf(stderr,
     "Usage: %s [-h] [-n <name>]\n"
-    "  -n <name>:        Change the name of of the abtract unix domain socket. (%s)\n"
-    "  -P <projection>:  Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
-    "  -h:               Show help.\n",
-    pname, DEFAULT_SOCKET_NAME
+    "  -d <id>:       Display ID. (%d)\n"
+    "  -n <name>:     Change the name of the abtract unix domain socket. (%s)\n"
+    "  -P <value>:    Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
+    "  -s:            Take a screenshot and output it to stdout. Needs -P.\n"
+    "  -i:            Get display information in JSON format. May segfault.\n"
+    "  -h:            Show help.\n",
+    pname, DEFAULT_DISPLAY_ID, DEFAULT_SOCKET_NAME
   );
 }
 
@@ -82,7 +89,7 @@ private:
   bool mStopped;
 };
 
-int
+static int
 pump(int fd, unsigned char* data, size_t length) {
   do {
     int wrote = write(fd, data, length);
@@ -99,23 +106,67 @@ pump(int fd, unsigned char* data, size_t length) {
   return 0;
 }
 
-int putUInt32LE(unsigned char* data, int value) {
+static int
+putUInt32LE(unsigned char* data, int value) {
   data[0] = (value & 0x000000FF) >> 0;
   data[1] = (value & 0x0000FF00) >> 8;
   data[2] = (value & 0x00FF0000) >> 16;
   data[3] = (value & 0xFF000000) >> 24;
 }
 
+static bool
+try_get_framebuffer_display_info(uint32_t displayId, Minicap::DisplayInfo* info) {
+  char path[64];
+  sprintf(path, "/dev/graphics/fb%d", displayId);
+
+  int fd = open(path, O_RDONLY);
+  if (fd < 0) {
+    MCERROR("Cannot open %s", path);
+    return false;
+  }
+
+  fb_var_screeninfo vinfo;
+  if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0) {
+    close(fd);
+    MCERROR("Cannot get FBIOGET_VSCREENINFO of %s", path);
+    return false;
+  }
+
+  info->width = vinfo.xres;
+  info->height = vinfo.yres;
+  info->orientation = vinfo.rotate;
+  info->xdpi = static_cast<float>(vinfo.xres) / static_cast<float>(vinfo.width) * 25.4;
+  info->ydpi = static_cast<float>(vinfo.yres) / static_cast<float>(vinfo.height) * 25.4;
+  info->size = std::sqrt(
+    (static_cast<float>(vinfo.width) * static_cast<float>(vinfo.width)) +
+    (static_cast<float>(vinfo.height) * static_cast<float>(vinfo.height))) / 25.4;
+  info->density = std::sqrt(
+    (static_cast<float>(vinfo.xres) * static_cast<float>(vinfo.xres)) +
+    (static_cast<float>(vinfo.yres) * static_cast<float>(vinfo.yres))) / info->size;
+  info->secure = false;
+  info->fps = 0;
+
+  close(fd);
+
+  return true;
+}
+
 int
 main(int argc, char* argv[]) {
   const char* pname = argv[0];
   const char* sockname = DEFAULT_SOCKET_NAME;
+  uint32_t displayId = DEFAULT_DISPLAY_ID;
   unsigned int quality = DEFAULT_JPG_QUALITY;
+  bool showInfo = false;
+  bool takeScreenshot = false;
   Projection proj;
 
   int opt;
-  while ((opt = getopt(argc, argv, "n:P:h")) != -1) {
+  while ((opt = getopt(argc, argv, "d:n:P:sih")) != -1) {
     switch (opt) {
+    case 'd':
+      displayId = atoi(optarg);
+      break;
     case 'n':
       sockname = optarg;
       break;
@@ -127,6 +178,12 @@ main(int argc, char* argv[]) {
       }
       break;
     }
+    case 's':
+      takeScreenshot = true;
+      break;
+    case 'i':
+      showInfo = true;
+      break;
     case 'h':
       usage(pname);
       return EXIT_SUCCESS;
@@ -135,6 +192,54 @@ main(int argc, char* argv[]) {
       usage(pname);
       return EXIT_FAILURE;
     }
+  }
+
+  // Start Android's thread pool so that it will be able to serve our requests.
+  minicap_start_thread_pool();
+
+  if (showInfo) {
+    Minicap::DisplayInfo info;
+
+    if (!minicap_try_get_display_info(displayId, &info)) {
+      if (!try_get_framebuffer_display_info(displayId, &info)) {
+        MCERROR("Unable to get display info");
+        return EXIT_FAILURE;
+      }
+    }
+
+    int rotation;
+    switch (info.orientation) {
+    case Minicap::ORIENTATION_0:
+      rotation = 0;
+      break;
+    case Minicap::ORIENTATION_90:
+      rotation = 90;
+      break;
+    case Minicap::ORIENTATION_180:
+      rotation = 180;
+      break;
+    case Minicap::ORIENTATION_270:
+      rotation = 270;
+      break;
+    }
+
+    std::cout.precision(2);
+    std::cout.setf(std::ios_base::fixed, std::ios_base::floatfield);
+
+    std::cout << "{"                                         << std::endl
+              << "    \"id\": "       << displayId    << "," << std::endl
+              << "    \"width\": "    << info.width   << "," << std::endl
+              << "    \"height\": "   << info.height  << "," << std::endl
+              << "    \"xdpi\": "     << info.xdpi    << "," << std::endl
+              << "    \"ydpi\": "     << info.ydpi    << "," << std::endl
+              << "    \"size\": "     << info.size    << "," << std::endl
+              << "    \"density\": "  << info.density << "," << std::endl
+              << "    \"fps\": "      << info.fps     << "," << std::endl
+              << "    \"secure\": "   << (info.secure ? "true" : "false") << "," << std::endl
+              << "    \"rotation\": " << rotation            << std::endl
+              << "}"                                         << std::endl;
+
+    return EXIT_SUCCESS;
   }
 
   if (!proj.valid()) {
@@ -146,9 +251,6 @@ main(int argc, char* argv[]) {
 
   // Disable STDOUT buffering.
   setbuf(stdout, NULL);
-
-  // Start Android's thread pool so that it will be able to serve our requests.
-  minicap_start_thread_pool();
 
   // Set real display size.
   Minicap::DisplayInfo realInfo;
@@ -172,7 +274,7 @@ main(int argc, char* argv[]) {
   SimpleServer server;
 
   // Set up minicap.
-  Minicap* minicap = minicap_create(0);
+  Minicap* minicap = minicap_create(displayId);
   if (minicap == NULL) {
     return EXIT_FAILURE;
   }
@@ -197,6 +299,30 @@ main(int argc, char* argv[]) {
   if (!encoder.reserveData(realInfo.width, realInfo.height)) {
     MCERROR("Unable to reserve data for JPG encoder");
     goto disaster;
+  }
+
+  if (takeScreenshot) {
+    if (!waiter.waitForFrame()) {
+      MCERROR("Unable to wait for frame");
+      goto disaster;
+    }
+
+    if (!minicap->consumePendingFrame(&frame)) {
+      MCERROR("Unable to consume pending frame");
+      goto disaster;
+    }
+
+    if (!encoder.encode(&frame, quality)) {
+      MCERROR("Unable to encode frame");
+      goto disaster;
+    }
+
+    if (pump(STDOUT_FILENO, encoder.getEncodedData(), encoder.getEncodedSize()) < 0) {
+      MCERROR("Unable to output encoded frame data");
+      goto disaster;
+    }
+
+    return EXIT_SUCCESS;
   }
 
   if (!server.start(sockname)) {
