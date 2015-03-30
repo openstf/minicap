@@ -196,9 +196,44 @@ private:
 
   bool
   createVirtualDisplay() {
+    uint32_t sourceWidth, sourceHeight;
+    uint32_t targetWidth, targetHeight;
+    uint32_t hint = 0;
+
+    switch (mDesiredOrientation) {
+    case Minicap::ORIENTATION_90:
+      hint |= NATIVE_WINDOW_TRANSFORM_ROT_90;
+      sourceWidth = mRealHeight;
+      sourceHeight = mRealWidth;
+      targetWidth = mDesiredHeight;
+      targetHeight = mDesiredWidth;
+      break;
+    case Minicap::ORIENTATION_270:
+      hint |= NATIVE_WINDOW_TRANSFORM_ROT_270;
+      sourceWidth = mRealHeight;
+      sourceHeight = mRealWidth;
+      targetWidth = mDesiredHeight;
+      targetHeight = mDesiredWidth;
+      break;
+    case Minicap::ORIENTATION_180:
+      hint |= NATIVE_WINDOW_TRANSFORM_ROT_180;
+      sourceWidth = mRealWidth;
+      sourceHeight = mRealHeight;
+      targetWidth = mDesiredWidth;
+      targetHeight = mDesiredHeight;
+      break;
+    case Minicap::ORIENTATION_0:
+    default:
+      sourceWidth = mRealWidth;
+      sourceHeight = mRealHeight;
+      targetWidth = mDesiredWidth;
+      targetHeight = mDesiredHeight;
+      break;
+    }
+
     // Set up virtual display size.
-    android::Rect layerStackRect(mRealWidth, mRealHeight);
-    android::Rect visibleRect(mDesiredWidth, mDesiredHeight);
+    android::Rect layerStackRect(sourceWidth, sourceHeight);
+    android::Rect visibleRect(targetWidth, targetHeight);
 
     // Create a Surface for the virtual display to write to.
     MCINFO("Creating SurfaceComposerClient");
@@ -224,8 +259,9 @@ private:
     // Galaxy Note Pro 12.2 LTE.
     mBufferQueue->disableAsyncBuffer();
 
-    mBufferQueue->setDefaultBufferSize(mDesiredWidth, mDesiredHeight);
+    mBufferQueue->setDefaultBufferSize(targetWidth, targetHeight);
     mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
+    mBufferQueue->setTransformHint(hint);
 
     MCINFO("Creating CPU consumer");
     mConsumer = new android::CpuConsumer(mBufferQueue, 1, false);
@@ -239,8 +275,7 @@ private:
     android::SurfaceComposerClient::openGlobalTransaction();
     android::SurfaceComposerClient::setDisplaySurface(mVirtualDisplay, mBufferQueue);
     android::SurfaceComposerClient::setDisplayProjection(mVirtualDisplay,
-      mDesiredOrientation,
-      layerStackRect, visibleRect);
+      android::DISPLAY_ORIENTATION_0, layerStackRect, visibleRect);
     android::SurfaceComposerClient::setDisplayLayerStack(mVirtualDisplay, 0); // default stack
     android::SurfaceComposerClient::closeGlobalTransaction();
 
