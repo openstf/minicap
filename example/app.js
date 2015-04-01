@@ -53,28 +53,31 @@ wss.on('connection', function(ws) {
           case 5:
             // pid
             banner.pid +=
-              chunk[cursor] << ((readBannerBytes - 2) * 8)
+              (chunk[cursor] << ((readBannerBytes - 2) * 8)) >>> 0
             break
           case 6:
           case 7:
           case 8:
           case 9:
             // real width
-            banner.realWidth += chunk[cursor] << ((readBannerBytes - 6) * 8)
+            banner.realWidth +=
+              (chunk[cursor] << ((readBannerBytes - 6) * 8)) >>> 0
             break
           case 10:
           case 11:
           case 12:
           case 13:
             // real height
-            banner.realHeight += chunk[cursor] << ((readBannerBytes - 10) * 8)
+            banner.realHeight +=
+              (chunk[cursor] << ((readBannerBytes - 10) * 8)) >>> 0
             break
           case 14:
           case 15:
           case 16:
           case 17:
             // virtual width
-            banner.virtualWidth += chunk[cursor] << ((readBannerBytes - 14) * 8)
+            banner.virtualWidth +=
+              (chunk[cursor] << ((readBannerBytes - 14) * 8)) >>> 0
             break
           case 18:
           case 19:
@@ -82,7 +85,7 @@ wss.on('connection', function(ws) {
           case 21:
             // virtual height
             banner.virtualHeight +=
-              chunk[cursor] << ((readBannerBytes - 18) * 8)
+              (chunk[cursor] << ((readBannerBytes - 18) * 8)) >>> 0
             break
           case 22:
             // orientation
@@ -98,7 +101,7 @@ wss.on('connection', function(ws) {
           readBannerBytes += 1
         }
         else if (readFrameBytes < 4) {
-          frameBodyLength += chunk[cursor] << (readFrameBytes * 8)
+          frameBodyLength += (chunk[cursor] << (readFrameBytes * 8)) >>> 0
           cursor += 1
           readFrameBytes += 1
           console.info('headerbyte%d(val=%d)', readFrameBytes, frameBodyLength)
