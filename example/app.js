@@ -24,6 +24,7 @@ wss.on('connection', function(ws) {
   var banner = {
     version: 0
   , length: 0
+  , pid: 0
   , realWidth: 0
   , realHeight: 0
   , virtualWidth: 0
@@ -41,49 +42,57 @@ wss.on('connection', function(ws) {
           case 0:
             // version
             banner.version = chunk[cursor]
-            break;
+            break
           case 1:
             // length
             banner.length = bannerLength = chunk[cursor]
-            break;
+            break
           case 2:
           case 3:
           case 4:
           case 5:
-            // real width
-            banner.realWidth += chunk[cursor] << ((readBannerBytes - 2) * 8)
-            break;
+            // pid
+            banner.pid +=
+              chunk[cursor] << ((readBannerBytes - 2) * 8)
+            break
           case 6:
           case 7:
           case 8:
           case 9:
-            // real height
-            banner.realHeight += chunk[cursor] << ((readBannerBytes - 6) * 8)
-            break;
+            // real width
+            banner.realWidth += chunk[cursor] << ((readBannerBytes - 6) * 8)
+            break
           case 10:
           case 11:
           case 12:
           case 13:
-            // virtual width
-            banner.virtualWidth += chunk[cursor] << ((readBannerBytes - 10) * 8)
-            break;
+            // real height
+            banner.realHeight += chunk[cursor] << ((readBannerBytes - 10) * 8)
+            break
           case 14:
           case 15:
           case 16:
           case 17:
+            // virtual width
+            banner.virtualWidth += chunk[cursor] << ((readBannerBytes - 14) * 8)
+            break
+          case 18:
+          case 19:
+          case 20:
+          case 21:
             // virtual height
             banner.virtualHeight +=
-              chunk[cursor] << ((readBannerBytes - 14) * 8)
-            break;
-          case 18:
+              chunk[cursor] << ((readBannerBytes - 18) * 8)
+            break
+          case 22:
             // orientation
             banner.orientation += chunk[cursor] * 90
-            break;
-          case 19:
+            break
+          case 23:
             // quirks
             banner.quirks = chunk[cursor]
             console.log('banner', banner)
-            break;
+            break
           }
           cursor += 1
           readBannerBytes += 1

@@ -20,7 +20,7 @@
 #include "Projection.hpp"
 
 #define BANNER_VERSION 1
-#define BANNER_SIZE 20
+#define BANNER_SIZE 24
 
 #define DEFAULT_SOCKET_NAME "minicap"
 #define DEFAULT_DISPLAY_ID 0
@@ -247,6 +247,7 @@ main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
+  std::cerr << "PID: " << getpid() << std::endl;
   std::cerr << "INFO: Using projection " << proj << std::endl;
 
   // Disable STDOUT buffering.
@@ -277,6 +278,20 @@ main(int argc, char* argv[]) {
   Minicap* minicap = minicap_create(displayId);
   if (minicap == NULL) {
     return EXIT_FAILURE;
+  }
+
+  // Figure out the quirks the current capture method has.
+  unsigned char quirks = 0;
+  switch (minicap->getCaptureMethod()) {
+  case Minicap::METHOD_FRAMEBUFFER:
+    quirks |= QUIRK_DUMB | QUIRK_TEAR;
+    break;
+  case Minicap::METHOD_SCREENSHOT:
+    quirks |= QUIRK_DUMB;
+    break;
+  case Minicap::METHOD_VIRTUAL_DISPLAY:
+    quirks |= QUIRK_PREROTATED;
+    break;
   }
 
   if (!minicap->setRealInfo(realInfo)) {
@@ -334,23 +349,13 @@ main(int argc, char* argv[]) {
   unsigned char banner[BANNER_SIZE];
   banner[0] = (unsigned char) BANNER_VERSION;
   banner[1] = (unsigned char) BANNER_SIZE;
-  putUInt32LE(banner + 2,  realInfo.width);
-  putUInt32LE(banner + 6,  realInfo.height);
-  putUInt32LE(banner + 10, desiredInfo.width);
-  putUInt32LE(banner + 14, desiredInfo.height);
-  banner[18] = (unsigned char) desiredInfo.orientation;
-
-  switch (minicap->getCaptureMethod()) {
-  case Minicap::METHOD_FRAMEBUFFER:
-    banner[19] = QUIRK_DUMB | QUIRK_TEAR;
-    break;
-  case Minicap::METHOD_SCREENSHOT:
-    banner[19] = QUIRK_DUMB;
-    break;
-  case Minicap::METHOD_VIRTUAL_DISPLAY:
-    banner[19] = QUIRK_PREROTATED;
-    break;
-  }
+  putUInt32LE(banner + 2, getpid());
+  putUInt32LE(banner + 6,  realInfo.width);
+  putUInt32LE(banner + 10,  realInfo.height);
+  putUInt32LE(banner + 14, desiredInfo.width);
+  putUInt32LE(banner + 18, desiredInfo.height);
+  banner[22] = (unsigned char) desiredInfo.orientation;
+  banner[23] = quirks;
 
   int fd;
   while ((fd = server.accept()) > 0) {
