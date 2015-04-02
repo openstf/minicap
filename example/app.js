@@ -94,11 +94,15 @@ wss.on('connection', function(ws) {
           case 23:
             // quirks
             banner.quirks = chunk[cursor]
-            console.log('banner', banner)
             break
           }
+
           cursor += 1
           readBannerBytes += 1
+
+          if (readBannerBytes === bannerLength) {
+            console.log('banner', banner)
+          }
         }
         else if (readFrameBytes < 4) {
           frameBodyLength += (chunk[cursor] << (readFrameBytes * 8)) >>> 0
