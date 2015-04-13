@@ -253,11 +253,12 @@ private:
     );
 
     MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(1);
+    mConsumer = new android::CpuConsumer(3);
     mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating buffer queue");
     mBufferQueue = mConsumer->getBufferQueue();
+    mBufferQueue->setSynchronousMode(false);
     mBufferQueue->setDefaultBufferSize(targetWidth, targetHeight);
     mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
     mBufferQueue->setTransformHint(hint);

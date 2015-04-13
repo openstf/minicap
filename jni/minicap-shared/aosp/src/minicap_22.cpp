@@ -260,7 +260,7 @@ private:
     mBufferConsumer->setTransformHint(hint);
 
     MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(mBufferConsumer, 1, false);
+    mConsumer = new android::CpuConsumer(mBufferConsumer, 3, false);
     mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating frame waiter");

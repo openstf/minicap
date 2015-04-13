@@ -254,17 +254,12 @@ private:
 
     MCINFO("Creating buffer queue");
     mBufferQueue = new android::BufferQueue();
-
-    // Unfortunately having async buffers causes vsync issues on at least
-    // Galaxy Note Pro 12.2 LTE.
-    mBufferQueue->disableAsyncBuffer();
-
     mBufferQueue->setDefaultBufferSize(targetWidth, targetHeight);
     mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
     mBufferQueue->setTransformHint(hint);
 
     MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(mBufferQueue, 1, false);
+    mConsumer = new android::CpuConsumer(mBufferQueue, 3, false);
     mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating frame waiter");

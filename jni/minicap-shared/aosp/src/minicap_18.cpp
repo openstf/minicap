@@ -253,7 +253,7 @@ private:
     );
 
     MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(1, false);
+    mConsumer = new android::CpuConsumer(3, false);
     mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating buffer queue");
