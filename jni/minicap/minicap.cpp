@@ -367,11 +367,6 @@ main(int argc, char* argv[]) {
     }
 
     while (waiter.waitForFrame()) {
-      if (haveFrame) {
-        minicap->releaseConsumedFrame(&frame);
-        haveFrame = false;
-      }
-
       if (!minicap->consumePendingFrame(&frame)) {
         MCERROR("Unable to consume pending frame");
         goto disaster;
@@ -392,6 +387,11 @@ main(int argc, char* argv[]) {
       if (pump(fd, data, size + 4) < 0) {
         break;
       }
+
+      // This will call onFrameAvailable() on older devices, so we have
+      // to do it here or the loop will stop.
+      minicap->releaseConsumedFrame(&frame);
+      haveFrame = false;
     }
 
     MCINFO("Closing client connection");
