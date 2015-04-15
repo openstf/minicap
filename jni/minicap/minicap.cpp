@@ -242,6 +242,9 @@ main(int argc, char* argv[]) {
     return EXIT_SUCCESS;
   }
 
+  proj.forceMaximumSize();
+  proj.forceAspectRatio();
+
   if (!proj.valid()) {
     std::cerr << "ERROR: missing or invalid -P" << std::endl;
     return EXIT_FAILURE;

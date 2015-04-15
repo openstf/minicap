@@ -1,6 +1,7 @@
 #ifndef MINICAP_PROJECTION_HPP
 #define MINICAP_PROJECTION_HPP
 
+#include <cmath>
 #include <ostream>
 
 class Projection {
@@ -211,13 +212,38 @@ public:
       rotation(0) {
   }
 
-  bool valid() {
+  void
+  forceMaximumSize() {
+    if (virtualWidth > realWidth) {
+      virtualWidth = realWidth;
+    }
+
+    if (virtualHeight > realHeight) {
+      virtualHeight = realHeight;
+    }
+  }
+
+  void
+  forceAspectRatio() {
+    double aspect = static_cast<double>(realWidth) / static_cast<double>(realHeight);
+
+    if (virtualHeight > (uint32_t) (virtualWidth / aspect)) {
+      virtualHeight = static_cast<uint32_t>(round(virtualWidth / aspect));
+    }
+    else {
+      virtualWidth = static_cast<uint32_t>(round(virtualHeight * aspect));
+    }
+  }
+
+  bool
+  valid() {
     return realWidth > 0 && realHeight > 0 &&
         virtualWidth > 0 && virtualHeight > 0 &&
         virtualWidth <= realWidth && virtualHeight <= realHeight;
   }
 
-  friend std::ostream& operator<< (std::ostream& stream, const Projection& proj) {
+  friend std::ostream&
+  operator<< (std::ostream& stream, const Projection& proj) {
     stream << proj.realWidth << 'x' << proj.realHeight << '@'
         << proj.virtualWidth << 'x' << proj.virtualHeight << '/' << proj.rotation;
     return stream;
