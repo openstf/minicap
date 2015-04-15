@@ -129,7 +129,7 @@ public:
   virtual void
   releaseConsumedFrame(Minicap::Frame* /* frame */) {
     mHeap = NULL;
-    mUserFrameAvailableListener->onFrameAvailable();
+    return mUserFrameAvailableListener->onFrameAvailable();
   }
 
   virtual bool
