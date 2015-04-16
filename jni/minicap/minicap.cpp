@@ -41,6 +41,7 @@ usage(const char* pname)
     "  -n <name>:     Change the name of the abtract unix domain socket. (%s)\n"
     "  -P <value>:    Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
     "  -s:            Take a screenshot and output it to stdout. Needs -P.\n"
+    "  -S:            Skip frames when they cannot be consumed quickly enough.\n"
     "  -i:            Get display information in JSON format. May segfault.\n"
     "  -h:            Show help.\n",
     pname, DEFAULT_DISPLAY_ID, DEFAULT_SOCKET_NAME
@@ -55,18 +56,23 @@ public:
       mStopped(false) {
   }
 
-  bool
+  int
   waitForFrame() {
     std::unique_lock<std::mutex> lock(mMutex);
 
     while (!mStopped) {
       if (mCondition.wait_for(lock, mTimeout, [this]{return mPendingFrames > 0;})) {
-        mPendingFrames -= 1;
-        return !mStopped;
+        return mStopped ? 0 : mPendingFrames--;
       }
     }
 
-    return false;
+    return 0;
+  }
+
+  void
+  reportExtraConsumption(int count) {
+    std::unique_lock<std::mutex> lock(mMutex);
+    mPendingFrames -= count;
   }
 
   void
@@ -159,10 +165,11 @@ main(int argc, char* argv[]) {
   unsigned int quality = DEFAULT_JPG_QUALITY;
   bool showInfo = false;
   bool takeScreenshot = false;
+  bool skipFrames = false;
   Projection proj;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:n:P:sih")) != -1) {
+  while ((opt = getopt(argc, argv, "d:n:P:siSh")) != -1) {
     switch (opt) {
     case 'd':
       displayId = atoi(optarg);
@@ -183,6 +190,9 @@ main(int argc, char* argv[]) {
       break;
     case 'i':
       showInfo = true;
+      break;
+    case 'S':
+      skipFrames = true;
       break;
     case 'h':
       usage(pname);
@@ -369,7 +379,24 @@ main(int argc, char* argv[]) {
       continue;
     }
 
-    while (waiter.waitForFrame()) {
+    int pending;
+    while ((pending = waiter.waitForFrame()) > 0) {
+      if (skipFrames && pending > 1) {
+        // Skip frames if we have too many. Not particularly thread safe,
+        // but this loop should be the only consumer anyway (i.e. nothing)
+        // else decreases the frame count.
+        waiter.reportExtraConsumption(pending - 1);
+
+        while (--pending >= 1) {
+          if (!minicap->consumePendingFrame(&frame)) {
+            MCERROR("Unable to skip pending frame");
+            goto disaster;
+          }
+
+          minicap->releaseConsumedFrame(&frame);
+        }
+      }
+
       if (!minicap->consumePendingFrame(&frame)) {
         MCERROR("Unable to consume pending frame");
         goto disaster;
