@@ -383,8 +383,8 @@ main(int argc, char* argv[]) {
     while ((pending = waiter.waitForFrame()) > 0) {
       if (skipFrames && pending > 1) {
         // Skip frames if we have too many. Not particularly thread safe,
-        // but this loop should be the only consumer anyway (i.e. nothing)
-        // else decreases the frame count.
+        // but this loop should be the only consumer anyway (i.e. nothing
+        // else decreases the frame count).
         waiter.reportExtraConsumption(pending - 1);
 
         while (--pending >= 1) {
