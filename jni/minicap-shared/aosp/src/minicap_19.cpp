@@ -254,13 +254,12 @@ private:
 
     MCINFO("Creating buffer queue");
     mBufferQueue = new android::BufferQueue();
-    mBufferQueue->setDefaultBufferSize(targetWidth, targetHeight);
-    mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
-    mBufferQueue->setTransformHint(hint);
 
     MCINFO("Creating CPU consumer");
     mConsumer = new android::CpuConsumer(mBufferQueue, 3, false);
     mConsumer->setName(android::String8("minicap"));
+    mConsumer->setDefaultBufferSize(targetWidth, targetHeight);
+    mConsumer->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
 
     MCINFO("Creating frame waiter");
     mFrameProxy = new FrameProxy(mUserFrameAvailableListener);
