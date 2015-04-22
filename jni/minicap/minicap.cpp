@@ -27,9 +27,9 @@
 #define DEFAULT_JPG_QUALITY 80
 
 enum {
-  QUIRK_DUMB        = 1,
-  QUIRK_PREROTATED  = 2,
-  QUIRK_TEAR        = 4,
+  QUIRK_DUMB            = 1,
+  QUIRK_ALWAYS_UPRIGHT  = 2,
+  QUIRK_TEAR            = 4,
 };
 
 static void
@@ -303,7 +303,7 @@ main(int argc, char* argv[]) {
     quirks |= QUIRK_DUMB;
     break;
   case Minicap::METHOD_VIRTUAL_DISPLAY:
-    quirks |= QUIRK_PREROTATED;
+    quirks |= QUIRK_ALWAYS_UPRIGHT;
     break;
   }
 

@@ -198,25 +198,21 @@ private:
   createVirtualDisplay() {
     uint32_t sourceWidth, sourceHeight;
     uint32_t targetWidth, targetHeight;
-    uint32_t hint = 0;
 
     switch (mDesiredOrientation) {
     case Minicap::ORIENTATION_90:
-      hint |= NATIVE_WINDOW_TRANSFORM_ROT_90;
       sourceWidth = mRealHeight;
       sourceHeight = mRealWidth;
       targetWidth = mDesiredHeight;
       targetHeight = mDesiredWidth;
       break;
     case Minicap::ORIENTATION_270:
-      hint |= NATIVE_WINDOW_TRANSFORM_ROT_270;
       sourceWidth = mRealHeight;
       sourceHeight = mRealWidth;
       targetWidth = mDesiredHeight;
       targetHeight = mDesiredWidth;
       break;
     case Minicap::ORIENTATION_180:
-      hint |= NATIVE_WINDOW_TRANSFORM_ROT_180;
       sourceWidth = mRealWidth;
       sourceHeight = mRealHeight;
       targetWidth = mDesiredWidth;
@@ -261,7 +257,6 @@ private:
     mBufferQueue->setSynchronousMode(false);
     mBufferQueue->setDefaultBufferSize(targetWidth, targetHeight);
     mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
-    mBufferQueue->setTransformHint(hint);
 
     MCINFO("Creating frame waiter");
     mFrameProxy = new FrameProxy(mUserFrameAvailableListener);
