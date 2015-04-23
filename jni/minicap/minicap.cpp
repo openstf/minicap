@@ -42,6 +42,7 @@ usage(const char* pname)
     "  -P <value>:    Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
     "  -s:            Take a screenshot and output it to stdout. Needs -P.\n"
     "  -S:            Skip frames when they cannot be consumed quickly enough.\n"
+    "  -t:            Attempt to get the capture method running, then exit.\n"
     "  -i:            Get display information in JSON format. May segfault.\n"
     "  -h:            Show help.\n",
     pname, DEFAULT_DISPLAY_ID, DEFAULT_SOCKET_NAME
@@ -166,10 +167,11 @@ main(int argc, char* argv[]) {
   bool showInfo = false;
   bool takeScreenshot = false;
   bool skipFrames = false;
+  bool testOnly = false;
   Projection proj;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:n:P:siSh")) != -1) {
+  while ((opt = getopt(argc, argv, "d:n:P:siSth")) != -1) {
     switch (opt) {
     case 'd':
       displayId = atoi(optarg);
@@ -193,6 +195,9 @@ main(int argc, char* argv[]) {
       break;
     case 'S':
       skipFrames = true;
+      break;
+    case 't':
+      testOnly = true;
       break;
     case 'h':
       usage(pname);
@@ -350,6 +355,12 @@ main(int argc, char* argv[]) {
       goto disaster;
     }
 
+    return EXIT_SUCCESS;
+  }
+
+  if (testOnly) {
+    minicap_free(minicap);
+    std::cout << "OK" << std::endl;
     return EXIT_SUCCESS;
   }
 
