@@ -15,7 +15,13 @@
 #include <gui/CpuConsumer.h>
 #include <gui/ISurfaceComposer.h>
 #include <gui/Surface.h>
+
+// Terrible hack to access ScreenshotClient's mBufferQueue. It's too risky
+// to do `new android::BufferQueue()` by ourselves, makers tend to customize
+// it.
+#define private public
 #include <gui/SurfaceComposerClient.h>
+#undef private
 
 #include <private/gui/ComposerService.h>
 
@@ -193,6 +199,7 @@ private:
   bool mHaveBuffer;
   bool mHaveRunningDisplay;
   android::CpuConsumer::LockedBuffer mBuffer;
+  android::ScreenshotClient mScreenshotClient;
 
   bool
   createVirtualDisplay() {
@@ -249,7 +256,8 @@ private:
     );
 
     MCINFO("Creating buffer queue");
-    mBufferQueue = new android::BufferQueue();
+    mScreenshotClient.getCpuConsumer();
+    mBufferQueue = mScreenshotClient.mBufferQueue;
 
     MCINFO("Creating CPU consumer");
     mConsumer = new android::CpuConsumer(mBufferQueue, 3, false);
