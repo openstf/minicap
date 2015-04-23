@@ -359,6 +359,12 @@ main(int argc, char* argv[]) {
   }
 
   if (testOnly) {
+    if (waiter.waitForFrame() <= 0) {
+      MCERROR("Did not receive any frames");
+      std::cout << "FAIL" << std::endl;
+      return EXIT_FAILURE;
+    }
+
     minicap_free(minicap);
     std::cout << "OK" << std::endl;
     return EXIT_SUCCESS;
