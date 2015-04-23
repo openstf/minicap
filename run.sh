@@ -17,11 +17,18 @@ else
   bin=minicap-nopie
 fi
 
+# Create a directory for our resources
+dir=/data/local/tmp/minicap-devel
+adb shell mkdir -p $dir
+
 # Upload the binary
-adb push libs/$abi/$bin /data/local/tmp/
+adb push libs/$abi/$bin $dir
 
 # Upload the shared library
-adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so /data/local/tmp/
+adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
 
 # Run!
-adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/$bin "$@"
+adb shell LD_LIBRARY_PATH=$dir $dir/$bin "$@"
+
+# Clean up
+adb shell rm -r $dir
