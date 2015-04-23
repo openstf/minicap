@@ -11,10 +11,12 @@
 #include <binder/IServiceManager.h>
 #include <binder/IMemory.h>
 
-#include <gui/BufferQueue.h>
-#include <gui/CpuConsumer.h>
-#include <gui/ISurfaceComposer.h>
-#include <gui/Surface.h>
+// Unfortunately some makers customize these. However, since they don't
+// contain any critical data, we can "simply" provide an overriding
+// implementation. This is needed for at least ASUS MemoPads running
+// Android 4.4.
+#include "override-19/ConsumerBase.h"
+#include "override-19/CpuConsumer.h"
 
 // Terrible hack to access ScreenshotClient's mBufferQueue. It's too risky
 // to do `new android::BufferQueue()` by ourselves, makers tend to customize
@@ -22,6 +24,10 @@
 #define private public
 #include <gui/SurfaceComposerClient.h>
 #undef private
+
+#include <gui/BufferQueue.h>
+#include <gui/ISurfaceComposer.h>
+#include <gui/Surface.h>
 
 #include <private/gui/ComposerService.h>
 
@@ -256,6 +262,9 @@ private:
     );
 
     MCINFO("Creating buffer queue");
+    // Many devices fail if we create a BufferQueue by ourselves.
+    // Fortunately, we can steal one from the very stable ScreenshotClient
+    // and repurpose it.
     mScreenshotClient.getCpuConsumer();
     mBufferQueue = mScreenshotClient.mBufferQueue;
 
