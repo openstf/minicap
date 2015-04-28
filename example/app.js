@@ -15,7 +15,15 @@ var wss = new WebSocketServer({ server: server })
 wss.on('connection', function(ws) {
   console.info('Got a client')
 
-  var stream = net.connect({ port: 1717 })
+  var stream = net.connect({
+    port: 1717
+  })
+
+  stream.on('error', function() {
+    console.error('Be sure to run `adb forward tcp:1717 localabstract:minicap`')
+    process.exit(1)
+  })
+
   var readBannerBytes = 0
   var bannerLength = 2
   var readFrameBytes = 0
@@ -118,6 +126,13 @@ wss.on('connection', function(ws) {
               frameBody
             , chunk.slice(cursor, cursor + frameBodyLength)
             ])
+
+            // Sanity check for JPG header, only here for debugging purposes.
+            if (frameBody[0] !== 0xFF || frameBody[1] !== 0xD8) {
+              console.error(
+                'Frame body does not start with JPG header', frameBody)
+              process.exit(1)
+            }
 
             ws.send(frameBody, {
               binary: true
