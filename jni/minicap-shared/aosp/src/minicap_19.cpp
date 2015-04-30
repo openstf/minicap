@@ -11,12 +11,14 @@
 #include <binder/IServiceManager.h>
 #include <binder/IMemory.h>
 
+#ifdef USE_CUSTOM_CONSUMER
 // Unfortunately some makers customize these. However, since they don't
 // contain any critical data, we can "simply" provide an overriding
 // implementation. This is needed for at least ASUS MemoPads running
-// Android 4.4.
+// Android 4.4. Note that this will NOT work on all devices.
 #include "override-19/ConsumerBase.h"
 #include "override-19/CpuConsumer.h"
+#endif
 
 // Terrible hack to access ScreenshotClient's mBufferQueue. It's too risky
 // to do `new android::BufferQueue()` by ourselves, makers tend to customize
@@ -26,6 +28,7 @@
 #undef private
 
 #include <gui/BufferQueue.h>
+#include <gui/CpuConsumer.h>
 #include <gui/ISurfaceComposer.h>
 #include <gui/Surface.h>
 
