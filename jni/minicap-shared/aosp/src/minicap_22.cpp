@@ -75,7 +75,7 @@ public:
   }
 
   virtual void
-  onFrameAvailable() {
+  onFrameAvailable(const android::BufferItem& /* item */) {
     mUserListener->onFrameAvailable();
   }
 
@@ -185,7 +185,8 @@ private:
   uint32_t mDesiredWidth;
   uint32_t mDesiredHeight;
   uint8_t mDesiredOrientation;
-  android::sp<android::BufferQueue> mBufferQueue;
+  android::sp<android::IGraphicBufferProducer> mBufferProducer;
+  android::sp<android::IGraphicBufferConsumer> mBufferConsumer;
   android::sp<android::CpuConsumer> mConsumer;
   android::sp<android::IBinder> mVirtualDisplay;
   android::sp<FrameProxy> mFrameProxy;
@@ -198,7 +199,6 @@ private:
   createVirtualDisplay() {
     uint32_t sourceWidth, sourceHeight;
     uint32_t targetWidth, targetHeight;
-    uint32_t hint = 0;
 
     switch (mDesiredOrientation) {
     case Minicap::ORIENTATION_90:
@@ -249,14 +249,14 @@ private:
       /* bool secure */                 true
     );
 
-    MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(3, false);
-    mConsumer->setName(android::String8("minicap"));
-
     MCINFO("Creating buffer queue");
-    mBufferQueue = mConsumer->getBufferQueue();
-    mBufferQueue->setDefaultBufferSize(targetWidth, targetHeight);
-    mBufferQueue->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
+    android::BufferQueue::createBufferQueue(&mBufferProducer, &mBufferConsumer);
+    mBufferConsumer->setDefaultBufferSize(targetWidth, targetHeight);
+    mBufferConsumer->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
+
+    MCINFO("Creating CPU consumer");
+    mConsumer = new android::CpuConsumer(mBufferConsumer, 3, false);
+    mConsumer->setName(android::String8("minicap"));
 
     MCINFO("Creating frame waiter");
     mFrameProxy = new FrameProxy(mUserFrameAvailableListener);
@@ -264,7 +264,7 @@ private:
 
     MCINFO("Publishing virtual display");
     android::SurfaceComposerClient::openGlobalTransaction();
-    android::SurfaceComposerClient::setDisplaySurface(mVirtualDisplay, mBufferQueue);
+    android::SurfaceComposerClient::setDisplaySurface(mVirtualDisplay, mBufferProducer);
     android::SurfaceComposerClient::setDisplayProjection(mVirtualDisplay,
       android::DISPLAY_ORIENTATION_0, layerStackRect, visibleRect);
     android::SurfaceComposerClient::setDisplayLayerStack(mVirtualDisplay, 0); // default stack
@@ -278,13 +278,15 @@ private:
   void
   destroyVirtualDisplay() {
     MCINFO("Destroying virtual display");
+    android::SurfaceComposerClient::destroyDisplay(mVirtualDisplay);
 
     if (mHaveBuffer) {
       mConsumer->unlockBuffer(mBuffer);
       mHaveBuffer = false;
     }
 
-    mBufferQueue = NULL;
+    mBufferProducer = NULL;
+    mBufferConsumer = NULL;
     mConsumer = NULL;
     mFrameProxy = NULL;
     mVirtualDisplay = NULL;

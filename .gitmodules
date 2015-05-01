@@ -1,3 +1,0 @@
-[submodule "websocketpp"]
-	path = jni/vendor/websocketpp/source
-	url = https://github.com/zaphoyd/websocketpp.git
