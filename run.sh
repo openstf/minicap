@@ -9,6 +9,7 @@ ndk-build 1>&2
 # Figure out which ABI and SDK the device has
 abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
 sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
+rel=$(adb shell getprop ro.build.version.release | tr -d '\r')
 
 # PIE is only supported since SDK 16
 if (($sdk >= 16)); then
@@ -39,7 +40,11 @@ adb shell "mkdir $dir 2>/dev/null"
 adb push libs/$abi/$bin $dir
 
 # Upload the shared library
-adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
+if [ -e jni/minicap-shared/aosp/libs/android-$rel/$abi/minicap.so ]; then
+  adb push jni/minicap-shared/aosp/libs/android-$rel/$abi/minicap.so $dir
+else
+  adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
+fi
 
 # Run!
 adb shell LD_LIBRARY_PATH=$dir $dir/$bin $args "$@"
