@@ -18,7 +18,7 @@ ssh -T "$BUILD_HOST" "docker run --rm \
   -v \$(which docker):\$(which docker) \
   -v /usr/lib:/usr/lib \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  sorccu/aosp:latest bash -c 'cd $TARGET && make -j 1'"
+  sorccu/aosp:jdk7 bash -c 'cd $TARGET && make -j 1'"
 
 rsync \
   --rsync-path='nice rsync' \
