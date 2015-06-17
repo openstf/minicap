@@ -3,7 +3,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE := libjpeg-turbo
 
-SOURCE_PATH := libjpeg-turbo-1.4.0
+SOURCE_PATH := libjpeg-turbo-1.4.1
 
 ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a armeabi-v7a-hard x86),)
 LOCAL_ARM_NEON := true
@@ -32,6 +32,9 @@ LOCAL_SRC_FILES += \
 	$(SOURCE_PATH)/simd/jquanti-sse2-64.asm \
 	$(SOURCE_PATH)/simd/simd/jsimd_arm.c \
 	$(SOURCE_PATH)/simd/simd/jsimd_arm_neon.S \
+
+LOCAL_CFLAGS += \
+	-DSIZEOF_SIZE_T=8 \
 
 else ifeq ($(TARGET_ARCH_ABI),x86)
 LOCAL_SRC_FILES += \
@@ -70,15 +73,24 @@ LOCAL_SRC_FILES += \
 	$(SOURCE_PATH)/simd/jquantf-sse2.asm \
 	$(SOURCE_PATH)/simd/jquanti-sse2.asm \
 
+LOCAL_CFLAGS += \
+	-DSIZEOF_SIZE_T=4 \
+
 else ifneq ($(filter $(TARGET_ARCH_ABI), armeabi-v7a armeabi-v7a-hard),)
 LOCAL_SRC_FILES += \
 	$(SOURCE_PATH)/simd/jsimd_arm.c \
 	$(SOURCE_PATH)/simd/jsimd_arm_neon.S \
 
+LOCAL_CFLAGS += \
+	-DSIZEOF_SIZE_T=4 \
+
 else ifeq ($(TARGET_ARCH_ABI),arm64-v8a)
 LOCAL_SRC_FILES += \
 	$(SOURCE_PATH)/simd/jsimd_arm64.c \
 	$(SOURCE_PATH)/simd/jsimd_arm64_neon.S \
+
+LOCAL_CFLAGS += \
+	-DSIZEOF_SIZE_T=8 \
 
 endif
 
