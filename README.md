@@ -118,7 +118,7 @@ So, let's assume that your device has a 1080x1920 screen. First, let's run a qui
 adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P 1080x1920@1080x1920/0 -t
 ```
 
-_The format of the -P argument is: {RealWidth}x{RealHeight}@{VirtualWidth}x{VirtualHeight}/{Orientation}. The "virtual" size is the size of the desired projection. The orientation argument tells minicap what the current orientation of the device is, which is required so that we can report the correct orientation over the socket interface to the frame consumer._
+_The format of the -P argument is: {RealWidth}x{RealHeight}@{VirtualWidth}x{VirtualHeight}/{Orientation}. The "virtual" size is the size of the desired projection. The orientation argument tells minicap what the current orientation of the device is (in degrees), which is required so that we can report the correct orientation over the socket interface to the frame consumer. One way to get the current orientation (or rotation) is [RotationWatcher.apk](https://github.com/openstf/RotationWatcher.apk)._
 
 If the command outputs "OK", then everything should be fine. If instead it segfaults (possibly after hanging for a while), your device is not supported and [we'd like to know about it](https://github.com/openstf/minicap/issues).
 
