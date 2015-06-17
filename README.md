@@ -24,6 +24,16 @@ The project consists of two parts. There's the main binary that can be built usi
 
 ## Building
 
+Before you build, you need to go and fetch [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/). You need to [download](http://sourceforge.net/projects/libjpeg-turbo/files/) and extract the source package to `jni/vendor/libjpeg-turbo`. It's not a submodule because they still use SVN. Check `jni/vendor/libjpeg-turbo/Android.mk` to see which version of libjpeg-turbo is expected.
+
+```bash
+cd jni/vendor/libjpeg-turbo
+cp ~/Downloads/libjpeg-turbo-1.4.1.tar.gz .
+tar xzvf libjpeg-turbo-1.4.1.tar.gz
+```
+
+You're now ready to proceed.
+
 Building requires [NDK](https://developer.android.com/tools/sdk/ndk/index.html), and is known to work with at least with NDK Revision 10e (May 2015). Older versions do not work due to the lack of `.asm` file support for x86_64.
 
 Then it's simply a matter of invoking `ndk-build`.
