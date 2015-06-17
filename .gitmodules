@@ -1,0 +1,3 @@
+[submodule "libjpeg-turbo"]
+	path = jni/vendor/libjpeg-turbo
+	url = https://github.com/openstf/android-libjpeg-turbo.git
