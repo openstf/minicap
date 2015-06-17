@@ -30,11 +30,11 @@ LOCAL_SRC_FILES += \
 	$(SOURCE_PATH)/simd/jidctred-sse2-64.asm \
 	$(SOURCE_PATH)/simd/jquantf-sse2-64.asm \
 	$(SOURCE_PATH)/simd/jquanti-sse2-64.asm \
-	$(SOURCE_PATH)/simd/simd/jsimd_arm.c \
-	$(SOURCE_PATH)/simd/simd/jsimd_arm_neon.S \
 
 LOCAL_CFLAGS += \
 	-DSIZEOF_SIZE_T=8 \
+
+LOCAL_ASMFLAGS += -D__x86_64__
 
 else ifeq ($(TARGET_ARCH_ABI),x86)
 LOCAL_SRC_FILES += \
