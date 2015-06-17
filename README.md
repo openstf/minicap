@@ -12,7 +12,7 @@ The project consists of two parts. There's the main binary that can be built usi
 
 ## Features
 
-* Usable to very smooth FPS depending on device. Older, weaker devices running an old version of Android can reach 10-20 FPS. Newer devices running recent versions of Android can usually reach 30-40 FPS fairly easily, but there are some exceptions. For maximum FPS we recommend running minicap on half the real vertical and horizontal resolution.
+* Usable to very smooth FPS depending on device. Older, weaker devices running an old version of Android can reach 10-20 FPS. Newer devices running recent versions of Android can usually reach 30-40 FPS fairly easily, but there are some exceptions. For maximum FPS we recommend running minicap at half the real vertical and horizontal resolution.
 * Decent and usable but non-zero latency. Depending on encoding performance and USB transfer speed it may be one to a few frames behind the physical screen.
 * On Android 4.2+, frames are only sent when something changes on the screen. On older versions frames are sent as a constant stream, whether there are changes or not.
 * Easy socket interface.
