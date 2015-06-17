@@ -6,7 +6,7 @@ Minicap works without root if started via [ADB](http://developer.android.com/too
 
 To capture the screen we currently use two methods. For older Android versions we use the ScreenshotClient, a private API in AOSP. For newer versions we use a virtual display, which also requires access to private APIs. The frames are then encoded using SIMD-enabled [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/) and sent over a socket interface. A planned future improvement to allow for even higher FPS is to use MediaRecorder and friends to take advantage of hardware encoding.
 
-Since minicap relies on private APIs, some devices may not work. At the time of writing, we have tested it on approximately 160 devices (incl. a few duplicates), and have so far found three models that segfault. We will continue to look for solutions for these devices when there's time.
+Since minicap relies on private APIs, some devices may not work. At the time of writing, we have tested it on approximately 160 devices (incl. a few duplicates), and have so far found three models that segfault. They are Xiaomi "HM NOTE 1W" (Redmi Note 1W), Huawei "G750-U10" (Honor 3X) and Lenovo "B6000-F" (Yoga Tablet 8). We will continue to look for solutions for these devices when there's time.
 
 The project consists of two parts. There's the main binary that can be built using NDK alone. The other part is a shared library that's built for each SDK level and each architecture inside the AOSP source tree. We ship precompiled libraries in this repo, but any modifications to the code used by these shared libraries require a recompile against the corresponding AOSP branches. This can be a major pain, but we have several utilities to help with the ordeal. If you're interested in that, [read the build instructions here](jni/minicap-shared/README.md).
 
@@ -15,7 +15,7 @@ The project consists of two parts. There's the main binary that can be built usi
 * Usable to very smooth FPS depending on device. Older, weaker devices running an old version of Android can reach 10-20 FPS. Newer devices running recent versions of Android can usually reach 30-40 FPS fairly easily, but there are some exceptions. For maximum FPS we recommend running minicap on half the real vertical and horizontal resolution.
 * Decent and usable but non-zero latency. Depending on encoding performance and USB transfer speed it may be one to a few frames behind the physical screen.
 * On Android 4.2+, frames are only sent when something changes on the screen. On older versions frames are sent as a constant stream, whether there are changes or not.
-* Easy socket interface in push mode.
+* Easy socket interface.
 
 ## Requirements
 
@@ -24,7 +24,7 @@ The project consists of two parts. There's the main binary that can be built usi
 
 ## Building
 
-Building requires [NDK](https://developer.android.com/tools/sdk/ndk/index.html), and is known to work with at least with NDK Revision 10e (May 2015).
+Building requires [NDK](https://developer.android.com/tools/sdk/ndk/index.html), and is known to work with at least with NDK Revision 10e (May 2015). Older versions do not work due to the lack of `.asm` file support for x86_64.
 
 Then it's simply a matter of invoking `ndk-build`.
 
@@ -38,13 +38,34 @@ If you've modified the shared library, you'll also need to [build that](jni/mini
 
 ## Running
 
-You'll need to [build](#building) first. You can then use the included [run.sh](run.sh) script to run the right binary on your device. If you have multiple devices connected, set `ANDROID_SERIAL` before running the script.
+You'll need to [build](#building) first.
+
+### The easy way
+
+You can then use the included [run.sh](run.sh) script to run the right binary on your device. It will make sure the correct binary and shared library get copied to your device. If you have multiple devices connected, set `ANDROID_SERIAL` before running the script.
 
 ```bash
+# Run a preliminary check to see whether your device will work
+./run.sh autosize -t
+# Check help
+./run.sh autosize -h
+# Start minicap
 ./run.sh autosize
 ```
 
-_The `autosize` command is for selecting the correct screen size automatically. To understand why this is necessary, read the manual instructions below._
+_The `autosize` command is for selecting the correct screen size automatically. This is done by the script instead of the binary itself. To understand why this is necessary, read the manual instructions below._
+
+Finally we simply need to create a local forward so that we can connect to the socket.
+
+```bash
+adb forward tcp:1313 localabstract:minicap
+```
+
+Now you'll be able to connect to the socket locally on port 1313.
+
+Then just see [usage](#usage) below.
+
+### The hard way
 
 To run manually, you have to first figure out which ABI your device supports:
 
@@ -79,7 +100,7 @@ adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -h
 
 Note that you'll need to set `LD_LIBRARY_PATH` every time you call minicap or it won't find the shared library.
 
-Also, you'll need to specify the size of the display and the projection every time you use minicap. This is because the private APIs we would have to use to access that information automatically unfortunately segfault on many Samsung devices (whereas minicap itself runs fine). The [run.sh](run.sh) helper script provides the `autosize` helper as mentioned above.
+Also, you'll need to specify the size of the display and the projection every time you use minicap. This is because the private APIs we would have to use to access that information segfault on many Samsung devices (whereas minicap itself runs fine). The [run.sh](run.sh) helper script provides the `autosize` helper as mentioned above.
 
 So, let's assume that your device has a 1080x1920 screen. First, let's run a quick check to see if your device is able to run the current version of minicap:
 
