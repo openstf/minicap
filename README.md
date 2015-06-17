@@ -24,12 +24,11 @@ The project consists of two parts. There's the main binary that can be built usi
 
 ## Building
 
-Before you build, you need to go and fetch [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/). You need to [download](http://sourceforge.net/projects/libjpeg-turbo/files/) and extract the source package to `jni/vendor/libjpeg-turbo`. It's not a submodule because they still use SVN. Check `jni/vendor/libjpeg-turbo/Android.mk` to see which version of libjpeg-turbo is expected.
+We include [libjpeg-turbo as  a Git submodule](https://github.com/openstf/android-libjpeg-turbo), so first make sure you've fetched it.
 
-```bash
-cd jni/vendor/libjpeg-turbo
-cp ~/Downloads/libjpeg-turbo-1.4.1.tar.gz .
-tar xzvf libjpeg-turbo-1.4.1.tar.gz
+```
+git submodule init
+git submodule update
 ```
 
 You're now ready to proceed.
