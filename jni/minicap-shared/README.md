@@ -26,8 +26,8 @@ You'll also need [rsync](https://rsync.samba.org/) and [SSH](http://www.openssh.
 Pull the required docker images on the build server as follows:
 
 ```bash
-docker pull sorccu/aosp:jdk6
-docker pull sorccu/aosp:jdk7
+docker pull openstf/aosp:jdk6
+docker pull openstf/aosp:jdk7
 ```
 
 These images will be used to both check out code as well as to compile it.
@@ -40,16 +40,16 @@ Currently the following branches are required to build the libraries for all sup
 
 | Branch              | SDK | Docker image to build with    |
 |---------------------|-----|-------------------------------|
-| android-2.3.3_r1    | 10  | sorccu/aosp:jdk6              |
-| android-4.0.1_r1    | 14  | sorccu/aosp:jdk6              |
-| android-4.0.3_r1    | 15  | sorccu/aosp:jdk6              |
-| android-4.1.1_r1    | 16  | sorccu/aosp:jdk6              |
-| android-4.2_r1      | 17  | sorccu/aosp:jdk6              |
-| android-4.3_r1      | 18  | sorccu/aosp:jdk6              |
-| android-4.4_r1      | 19  | sorccu/aosp:jdk6              |
-| android-5.0.1_r1    | 21  | sorccu/aosp:jdk7              |
-| android-5.1.0_r1    | 22  | sorccu/aosp:jdk7              |
-| android-m-preview   | M   | sorccu/aosp:jdk7              |
+| android-2.3.3_r1    | 10  | openstf/aosp:jdk6              |
+| android-4.0.1_r1    | 14  | openstf/aosp:jdk6              |
+| android-4.0.3_r1    | 15  | openstf/aosp:jdk6              |
+| android-4.1.1_r1    | 16  | openstf/aosp:jdk6              |
+| android-4.2_r1      | 17  | openstf/aosp:jdk6              |
+| android-4.3_r1      | 18  | openstf/aosp:jdk6              |
+| android-4.4_r1      | 19  | openstf/aosp:jdk6              |
+| android-5.0.1_r1    | 21  | openstf/aosp:jdk7              |
+| android-5.1.0_r1    | 22  | openstf/aosp:jdk7              |
+| android-m-preview   | M   | openstf/aosp:jdk7              |
 
 Furthermore, to make use of our provided Makefile, you should check out the branches to `/srv/aosp` for maximum ease of use.
 
@@ -79,7 +79,7 @@ We will later mount this file on our containers when checking out code. Note tha
 There are bundled helper scripts inside the docker images. To see what commands you have available, run the following command.
 
 ```bash
-docker run -ti --rm sorccu:aosp/jdk7 /aosp.sh help
+docker run -ti --rm openstf/aosp:jdk7 /aosp.sh help
 ```
 
 ### Creating an AOSP mirror
@@ -90,7 +90,7 @@ Now that we're a bit more familiar with the helper script, let's start fetching 
 docker run -ti --rm \
     -v /srv/aosp/mirror:/mirror \
     -v $PWD/.gitcookies:/root/.gitcookies:ro \
-    sorccu:aosp/jdk7 \
+    openstf/aosp:jdk7 \
     /aosp.sh create-mirror
 ```
 
@@ -111,7 +111,7 @@ docker run -ti --rm \
     -v /srv/aosp/mirror:/mirror \
     -v /srv/aosp/android-5.1.0_r1:/aosp \
     -v $PWD/.gitcookies:/root/.gitcookies:ro \
-    sorccu:aosp/jdk7 \
+    openstf/aosp:jdk7 \
     /aosp.sh checkout-branch android-5.1.0_r1
 ```
 
@@ -129,7 +129,7 @@ For each branch you wish to download directly from the AOSP servers, run the fol
 docker run -ti --rm \
     -v /srv/aosp/android-5.1.0_r1:/aosp \
     -v $PWD/.gitcookies:/root/.gitcookies:ro \
-    sorccu:aosp/jdk7 \
+    openstf/aosp:jdk7 \
     /aosp.sh checkout-branch --no-mirror android-5.1.0_r1
 ```
 
