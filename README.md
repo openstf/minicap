@@ -184,6 +184,8 @@ Appears a potentially unlimited number of times.
 
 ## Contributing
 
+_As a small disclaimer, minicap was the first time the author used C++, so even any non-functional changes to make the code more idiomatic (preferably without introducing new dependencies) are also very welcome, in addition to bug fixes and new features._
+
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
