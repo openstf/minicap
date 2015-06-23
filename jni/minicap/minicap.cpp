@@ -3,6 +3,7 @@
 #include <linux/fb.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <cmath>
 #include <condition_variable>
@@ -33,8 +34,7 @@ enum {
 };
 
 static void
-usage(const char* pname)
-{
+usage(const char* pname) {
   fprintf(stderr,
     "Usage: %s [-h] [-n <name>]\n"
     "  -d <id>:       Display ID. (%d)\n"
@@ -63,7 +63,7 @@ public:
 
     while (!mStopped) {
       if (mCondition.wait_for(lock, mTimeout, [this]{return mPendingFrames > 0;})) {
-        return mStopped ? 0 : mPendingFrames--;
+        return mPendingFrames--;
       }
     }
 
@@ -84,8 +84,13 @@ public:
   }
 
   void
-  cancel() {
+  stop() {
     mStopped = true;
+  }
+
+  bool
+  isStopped() {
+    return mStopped;
   }
 
 private:
@@ -158,6 +163,25 @@ try_get_framebuffer_display_info(uint32_t displayId, Minicap::DisplayInfo* info)
   return true;
 }
 
+static FrameWaiter gWaiter;
+
+static void
+signal_handler(int signum) {
+  switch (signum) {
+  case SIGINT:
+    MCINFO("Received SIGINT, stopping");
+    gWaiter.stop();
+    break;
+  case SIGTERM:
+    MCINFO("Received SIGTERM, stopping");
+    gWaiter.stop();
+    break;
+  default:
+    abort();
+    break;
+  }
+}
+
 int
 main(int argc, char* argv[]) {
   const char* pname = argv[0];
@@ -208,6 +232,14 @@ main(int argc, char* argv[]) {
       return EXIT_FAILURE;
     }
   }
+
+  // Set up signal handler.
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = signal_handler;
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGTERM, &sa, NULL);
+  sigaction(SIGINT, &sa, NULL);
 
   // Start Android's thread pool so that it will be able to serve our requests.
   minicap_start_thread_pool();
@@ -285,7 +317,6 @@ main(int argc, char* argv[]) {
   // Leave a 4-byte padding to the encoder so that we can inject the size
   // to the same buffer.
   JpgEncoder encoder(4, 0);
-  FrameWaiter waiter;
   Minicap::Frame frame;
   bool haveFrame = false;
 
@@ -322,7 +353,7 @@ main(int argc, char* argv[]) {
     goto disaster;
   }
 
-  minicap->setFrameAvailableListener(&waiter);
+  minicap->setFrameAvailableListener(&gWaiter);
 
   if (!minicap->applyConfigChanges()) {
     MCERROR("Unable to start minicap with current config");
@@ -335,7 +366,7 @@ main(int argc, char* argv[]) {
   }
 
   if (takeScreenshot) {
-    if (!waiter.waitForFrame()) {
+    if (!gWaiter.waitForFrame()) {
       MCERROR("Unable to wait for frame");
       goto disaster;
     }
@@ -359,7 +390,7 @@ main(int argc, char* argv[]) {
   }
 
   if (testOnly) {
-    if (waiter.waitForFrame() <= 0) {
+    if (gWaiter.waitForFrame() <= 0) {
       MCERROR("Did not receive any frames");
       std::cout << "FAIL" << std::endl;
       return EXIT_FAILURE;
@@ -388,7 +419,7 @@ main(int argc, char* argv[]) {
   banner[23] = quirks;
 
   int fd;
-  while ((fd = server.accept()) > 0) {
+  while (!gWaiter.isStopped() && (fd = server.accept()) > 0) {
     MCINFO("New client connection");
 
     if (pump(fd, banner, BANNER_SIZE) < 0) {
@@ -397,12 +428,12 @@ main(int argc, char* argv[]) {
     }
 
     int pending;
-    while ((pending = waiter.waitForFrame()) > 0) {
+    while (!gWaiter.isStopped() && (pending = gWaiter.waitForFrame()) > 0) {
       if (skipFrames && pending > 1) {
         // Skip frames if we have too many. Not particularly thread safe,
         // but this loop should be the only consumer anyway (i.e. nothing
         // else decreases the frame count).
-        waiter.reportExtraConsumption(pending - 1);
+        gWaiter.reportExtraConsumption(pending - 1);
 
         while (--pending >= 1) {
           if (!minicap->consumePendingFrame(&frame)) {
@@ -421,11 +452,14 @@ main(int argc, char* argv[]) {
 
       haveFrame = true;
 
+      // Encode the frame.
       if (!encoder.encode(&frame, quality)) {
         MCERROR("Unable to encode frame");
         goto disaster;
       }
 
+      // Push it out synchronously because it's fast and we don't care
+      // about other clients.
       unsigned char* data = encoder.getEncodedData() - 4;
       size_t size = encoder.getEncodedSize();
 
@@ -442,12 +476,12 @@ main(int argc, char* argv[]) {
     }
 
     MCINFO("Closing client connection");
-
     close(fd);
-  }
 
-  if (haveFrame) {
-    minicap->releaseConsumedFrame(&frame);
+    // Have we consumed one frame but are still holding it?
+    if (haveFrame) {
+      minicap->releaseConsumedFrame(&frame);
+    }
   }
 
   minicap_free(minicap);
