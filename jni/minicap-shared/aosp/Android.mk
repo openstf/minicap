@@ -33,7 +33,9 @@ LOCAL_SRC_FILES += src/minicap_14.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),14)
 LOCAL_SRC_FILES += src/minicap_14.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),10)
-LOCAL_SRC_FILES += src/minicap_10.cpp
+LOCAL_SRC_FILES += src/minicap_9.cpp
+else ifeq ($(PLATFORM_SDK_VERSION),9)
+LOCAL_SRC_FILES += src/minicap_9.cpp
 endif
 
 LOCAL_PRELINK_MODULE := false
@@ -44,7 +46,7 @@ LOCAL_SHARED_LIBRARIES := \
 	libbinder \
 	libui \
 
-ifeq ($(PLATFORM_SDK_VERSION),10)
+ifeq ($(PLATFORM_SDK_VERSION),$(filter $(PLATFORM_SDK_VERSION),10 9))
 LOCAL_SHARED_LIBRARIES += libsurfaceflinger_client
 else
 LOCAL_SHARED_LIBRARIES += libgui

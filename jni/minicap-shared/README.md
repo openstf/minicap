@@ -40,6 +40,7 @@ Currently the following branches are required to build the libraries for all sup
 
 | Branch              | SDK | Docker image to build with    |
 |---------------------|-----|-------------------------------|
+| android-2.3_r1      | 9   | openstf/aosp:jdk6              |
 | android-2.3.3_r1    | 10  | openstf/aosp:jdk6              |
 | android-4.0.1_r1    | 14  | openstf/aosp:jdk6              |
 | android-4.0.3_r1    | 15  | openstf/aosp:jdk6              |
