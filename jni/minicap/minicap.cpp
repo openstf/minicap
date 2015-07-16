@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/socket.h>
 
 #include <cmath>
 #include <condition_variable>
@@ -104,7 +105,9 @@ private:
 static int
 pump(int fd, unsigned char* data, size_t length) {
   do {
-    int wrote = write(fd, data, length);
+    // Make sure that we don't generate a SIGPIPE even if the socket doesn't
+    // exist anymore. We'll still get an EPIPE which is perfect.
+    int wrote = send(fd, data, length, MSG_NOSIGNAL);
 
     if (wrote < 0) {
       return wrote;
