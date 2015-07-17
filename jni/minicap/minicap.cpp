@@ -103,11 +103,28 @@ private:
 };
 
 static int
-pump(int fd, unsigned char* data, size_t length) {
+pumps(int fd, unsigned char* data, size_t length) {
   do {
     // Make sure that we don't generate a SIGPIPE even if the socket doesn't
     // exist anymore. We'll still get an EPIPE which is perfect.
     int wrote = send(fd, data, length, MSG_NOSIGNAL);
+
+    if (wrote < 0) {
+      return wrote;
+    }
+
+    data += wrote;
+    length -= wrote;
+  }
+  while (length > 0);
+
+  return 0;
+}
+
+static int
+pumpf(int fd, unsigned char* data, size_t length) {
+  do {
+    int wrote = write(fd, data, length);
 
     if (wrote < 0) {
       return wrote;
@@ -384,7 +401,7 @@ main(int argc, char* argv[]) {
       goto disaster;
     }
 
-    if (pump(STDOUT_FILENO, encoder.getEncodedData(), encoder.getEncodedSize()) < 0) {
+    if (pumpf(STDOUT_FILENO, encoder.getEncodedData(), encoder.getEncodedSize()) < 0) {
       MCERROR("Unable to output encoded frame data");
       goto disaster;
     }
@@ -425,7 +442,7 @@ main(int argc, char* argv[]) {
   while (!gWaiter.isStopped() && (fd = server.accept()) > 0) {
     MCINFO("New client connection");
 
-    if (pump(fd, banner, BANNER_SIZE) < 0) {
+    if (pumps(fd, banner, BANNER_SIZE) < 0) {
       close(fd);
       continue;
     }
@@ -468,7 +485,7 @@ main(int argc, char* argv[]) {
 
       putUInt32LE(data, size);
 
-      if (pump(fd, data, size + 4) < 0) {
+      if (pumps(fd, data, size + 4) < 0) {
         break;
       }
 
