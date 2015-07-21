@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Minicap by openstf</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Minicap</h1>
+      <h2 class="project-tagline">Stream real-time screen capture data out of Android devices.</h2>
+      <a href="https://github.com/openstf/minicap" class="btn">View on GitHub</a>
+      <a href="https://github.com/openstf/minicap/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/openstf/minicap/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="minicap" class="anchor" href="#minicap" aria-hidden="true"><span class="octicon octicon-link"></span></a>minicap</h1>
+
+<p>Minicap provides a socket interface for streaming realtime screen capture data out of Android devices. It is meant to be used as a component in a larger program and is therefore not immensely useful just by itself. For example, it is being used in <a href="https://github.com/openstf/stf">STF</a> for remote control.</p>
+
+<p>Minicap works without root if started via <a href="http://developer.android.com/tools/help/adb.html">ADB</a> on SDK 22 and lower, as well as on Android M Developer Preview. The lowest SDK level we build for is 9 (i.e. Android 2.3). Minicap also works on Android Wear. Emulators, however, are not supported.</p>
+
+<p>To capture the screen we currently use two methods. For older Android versions we use the ScreenshotClient, a private API in AOSP. For newer versions we use a virtual display, which also requires access to private APIs. The frames are then encoded using SIMD-enabled <a href="http://libjpeg-turbo.virtualgl.org/">libjpeg-turbo</a> and sent over a socket interface. A planned future improvement to allow for even higher FPS is to use MediaRecorder and friends to take advantage of hardware encoding.</p>
+
+<p>Since minicap relies on private APIs, some devices may not work. At the time of writing, we have tested it on approximately 160 devices (incl. a few duplicates), and have so far found three models that segfault. They are Xiaomi "HM NOTE 1W" (Redmi Note 1W), Huawei "G750-U10" (Honor 3X) and Lenovo "B6000-F" (Yoga Tablet 8). We will continue to look for solutions for these devices when there's time.</p>
+
+<p>The project consists of two parts. There's the main binary that can be built using NDK alone. The other part is a shared library that's built for each SDK level and each architecture inside the AOSP source tree. We ship precompiled libraries in this repo, but any modifications to the code used by these shared libraries require a recompile against the corresponding AOSP branches. This can be a major pain, but we have several utilities to help with the ordeal. If you're interested in that, <a href="jni/minicap-shared/README.md">read the build instructions here</a>.</p>
+
+<h2>
+<a id="features" class="anchor" href="#features" aria-hidden="true"><span class="octicon octicon-link"></span></a>Features</h2>
+
+<ul>
+<li>Usable to very smooth FPS depending on device. Older, weaker devices running an old version of Android can reach 10-20 FPS. Newer devices running recent versions of Android can usually reach 30-40 FPS fairly easily, but there are some exceptions. For maximum FPS we recommend running minicap at half the real vertical and horizontal resolution.</li>
+<li>Decent and usable but non-zero latency. Depending on encoding performance and USB transfer speed it may be one to a few frames behind the physical screen.</li>
+<li>On Android 4.2+, frames are only sent when something changes on the screen. On older versions frames are sent as a constant stream, whether there are changes or not.</li>
+<li>Easy socket interface.</li>
+</ul>
+
+<h2>
+<a id="requirements" class="anchor" href="#requirements" aria-hidden="true"><span class="octicon octicon-link"></span></a>Requirements</h2>
+
+<ul>
+<li>
+<a href="https://developer.android.com/tools/sdk/ndk/index.html">NDK</a>, Revision 10e (May 2015)</li>
+<li><a href="http://www.gnu.org/software/make/">make</a></li>
+</ul>
+
+<h2>
+<a id="building" class="anchor" href="#building" aria-hidden="true"><span class="octicon octicon-link"></span></a>Building</h2>
+
+<p>We include <a href="https://github.com/openstf/android-libjpeg-turbo">libjpeg-turbo as  a Git submodule</a>, so first make sure you've fetched it.</p>
+
+<pre><code>git submodule init
+git submodule update
+</code></pre>
+
+<p>You're now ready to proceed.</p>
+
+<p>Building requires <a href="https://developer.android.com/tools/sdk/ndk/index.html">NDK</a>, and is known to work with at least with NDK Revision 10e (May 2015). Older versions do not work due to the lack of <code>.asm</code> file support for x86_64.</p>
+
+<p>Then it's simply a matter of invoking <code>ndk-build</code>.</p>
+
+<pre><code>ndk-build
+</code></pre>
+
+<p>You should now have the binaries available in <code>./libs</code>.</p>
+
+<p>If you've modified the shared library, you'll also need to <a href="jni/minicap-shared/README.md">build that</a>.</p>
+
+<h2>
+<a id="running" class="anchor" href="#running" aria-hidden="true"><span class="octicon octicon-link"></span></a>Running</h2>
+
+<p>You'll need to <a href="#building">build</a> first.</p>
+
+<h3>
+<a id="the-easy-way" class="anchor" href="#the-easy-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>The easy way</h3>
+
+<p>You can then use the included <a href="run.sh">run.sh</a> script to run the right binary on your device. It will make sure the correct binary and shared library get copied to your device. If you have multiple devices connected, set <code>ANDROID_SERIAL</code> before running the script.</p>
+
+<div class="highlight highlight-bash"><pre><span class="pl-c"># Run a preliminary check to see whether your device will work</span>
+./run.sh autosize -t
+<span class="pl-c"># Check help</span>
+./run.sh autosize -h
+<span class="pl-c"># Start minicap</span>
+./run.sh autosize</pre></div>
+
+<p><em>The <code>autosize</code> command is for selecting the correct screen size automatically. This is done by the script instead of the binary itself. To understand why this is necessary, read the manual instructions below.</em></p>
+
+<p>Finally we simply need to create a local forward so that we can connect to the socket.</p>
+
+<div class="highlight highlight-bash"><pre>adb forward tcp:1313 localabstract:minicap</pre></div>
+
+<p>Now you'll be able to connect to the socket locally on port 1313.</p>
+
+<p>Then just see <a href="#usage">usage</a> below.</p>
+
+<h3>
+<a id="the-hard-way" class="anchor" href="#the-hard-way" aria-hidden="true"><span class="octicon octicon-link"></span></a>The hard way</h3>
+
+<p>To run manually, you have to first figure out which ABI your device supports:</p>
+
+<div class="highlight highlight-bash"><pre>ABI=<span class="pl-s"><span class="pl-pds">$(</span>adb shell getprop ro.product.cpu.abi <span class="pl-k">|</span> tr -d <span class="pl-s"><span class="pl-pds">'</span>\r<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span></pre></div>
+
+<p><em>Note that as Android shell always ends lines with CRLF, you'll have to remove the CR like above or the rest of the commands will not work properly.</em></p>
+
+<p><em>Also note that if you've got multiple devices connected, setting <code>ANDROID_SERIAL</code> will make things quite a bit easier as you won't have to specify the <code>-s &lt;serial&gt;</code> option every time.</em></p>
+
+<p>Now, push the appropriate binary to the device:</p>
+
+<div class="highlight highlight-bash"><pre>adb push libs/<span class="pl-smi">$ABI</span>/minicap /data/local/tmp/</pre></div>
+
+<p>Note that for SDK &lt;16, you will have to use the <code>minicap-nopie</code> executable which comes without <a href="http://en.wikipedia.org/wiki/Position-independent_code#Position-independent_executables">PIE</a> support. Check <a href="run.sh">run.sh</a> for a scripting example.</p>
+
+<p>The binary enough is not enough. We'll also need to select and push the correct shared library to the device. This can be done as follows.</p>
+
+<div class="highlight highlight-bash"><pre>SDK=<span class="pl-s"><span class="pl-pds">$(</span>adb shell getprop ro.build.version.sdk <span class="pl-k">|</span> tr -d <span class="pl-s"><span class="pl-pds">'</span>\r<span class="pl-pds">'</span></span><span class="pl-pds">)</span></span>
+adb push jni/minicap-shared/aosp/libs/android-<span class="pl-smi">$SDK</span>/<span class="pl-smi">$ABI</span>/minicap.so /data/local/tmp/</pre></div>
+
+<p>At this point it might be useful to check the usage:</p>
+
+<div class="highlight highlight-bash"><pre>adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -h</pre></div>
+
+<p>Note that you'll need to set <code>LD_LIBRARY_PATH</code> every time you call minicap or it won't find the shared library.</p>
+
+<p>Also, you'll need to specify the size of the display and the projection every time you use minicap. This is because the private APIs we would have to use to access that information segfault on many Samsung devices (whereas minicap itself runs fine). The <a href="run.sh">run.sh</a> helper script provides the <code>autosize</code> helper as mentioned above.</p>
+
+<p>So, let's assume that your device has a 1080x1920 screen. First, let's run a quick check to see if your device is able to run the current version of minicap:</p>
+
+<div class="highlight highlight-bash"><pre>adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P 1080x1920@1080x1920/0 -t</pre></div>
+
+<p><em>The format of the -P argument is: {RealWidth}x{RealHeight}@{VirtualWidth}x{VirtualHeight}/{Orientation}. The "virtual" size is the size of the desired projection. The orientation argument tells minicap what the current orientation of the device is (in degrees), which is required so that we can report the correct orientation over the socket interface to the frame consumer. One way to get the current orientation (or rotation) is <a href="https://github.com/openstf/RotationWatcher.apk">RotationWatcher.apk</a>.</em></p>
+
+<p>If the command outputs "OK", then everything should be fine. If instead it segfaults (possibly after hanging for a while), your device is not supported and <a href="https://github.com/openstf/minicap/issues">we'd like to know about it</a>.</p>
+
+<p>Finally, let's start minicap. It will start listening on an abstract unix domain socket.</p>
+
+<div class="highlight highlight-bash"><pre>adb shell LD_LIBRARY_PATH=/data/local/tmp /data/local/tmp/minicap -P 1080x1920@1080x1920/0</pre></div>
+
+<p>Now we simply need to create a local forward so that we can connect to the socket.</p>
+
+<div class="highlight highlight-bash"><pre>adb forward tcp:1313 localabstract:minicap</pre></div>
+
+<p>Now you can connect to the socket using the local port. Note that currently <strong>only one connection at a time is supported.</strong> It doesn't really make sense to have more than one connection anyway, as the USB bus would get saturated very quickly. So, let's connect.</p>
+
+<div class="highlight highlight-bash"><pre>nc localhost 1313</pre></div>
+
+<p>This will give you binary output that will be explained in the next section.</p>
+
+<h2>
+<a id="usage" class="anchor" href="#usage" aria-hidden="true"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>It is assumed that you now have an open connection to the minicap socket. If not, follow the <a href="#running">instructions</a> above.</p>
+
+<p>The minicap protocol is a simple push-based binary protocol. When you first connect to the socket, you get a global header followed by the first frame. The global header will not appear again. More frames keep getting sent until you stop minicap.</p>
+
+<h3>
+<a id="global-header-binary-format" class="anchor" href="#global-header-binary-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>Global header binary format</h3>
+
+<p>Appears once.</p>
+
+<table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Length</th>
+<th>Type</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>1</td>
+<td>unsigned char</td>
+<td>Version (currently 1)</td>
+</tr>
+<tr>
+<td>1</td>
+<td>1</td>
+<td>unsigned char</td>
+<td>Size of the header (from byte 0)</td>
+</tr>
+<tr>
+<td>2-5</td>
+<td>4</td>
+<td>uint32 (low endian)</td>
+<td>Pid of the process</td>
+</tr>
+<tr>
+<td>6-9</td>
+<td>4</td>
+<td>uint32 (low endian)</td>
+<td>Real display width in pixels</td>
+</tr>
+<tr>
+<td>10-13</td>
+<td>4</td>
+<td>uint32 (low endian)</td>
+<td>Real display height in pixels</td>
+</tr>
+<tr>
+<td>14-17</td>
+<td>4</td>
+<td>uint32 (low endian)</td>
+<td>Virtual display width in pixels</td>
+</tr>
+<tr>
+<td>18-21</td>
+<td>4</td>
+<td>uint32 (low endian)</td>
+<td>Virtual display height in pixels</td>
+</tr>
+<tr>
+<td>22</td>
+<td>1</td>
+<td>unsigned char</td>
+<td>Display orientation</td>
+</tr>
+<tr>
+<td>23</td>
+<td>1</td>
+<td>unsigned char</td>
+<td>Quirk bitflags (see below)</td>
+</tr>
+</tbody>
+</table>
+
+<h4>
+<a id="quirk-bitflags" class="anchor" href="#quirk-bitflags" aria-hidden="true"><span class="octicon octicon-link"></span></a>Quirk bitflags</h4>
+
+<p>Currently, the following quirks may be reported:</p>
+
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Name</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>QUIRK_DUMB</td>
+<td>Frames will get sent even if there are no changes from the previous frame. Informative, doesn't require any actions on your part. You can limit the capture rate by reading frame data slower in your own code if you wish.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>QUIRK_ALWAYS_UPRIGHT</td>
+<td>The frame will always be in upright orientation regardless of the device orientation. This needs to be taken into account when rendering the image.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>QUIRK_TEAR</td>
+<td>Frame tear might be visible. Informative, no action required. Neither of our current two methods exhibit this behavior.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>
+<a id="frame-binary-format" class="anchor" href="#frame-binary-format" aria-hidden="true"><span class="octicon octicon-link"></span></a>Frame binary format</h3>
+
+<p>Appears a potentially unlimited number of times.</p>
+
+<table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Length</th>
+<th>Type</th>
+<th>Explanation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-3</td>
+<td>4</td>
+<td>uint32 (low endian)</td>
+<td>Frame size in bytes (=n)</td>
+</tr>
+<tr>
+<td>4-(n+4)</td>
+<td>n</td>
+<td>unsigned char[]</td>
+<td>Frame in JPG format</td>
+</tr>
+</tbody>
+</table>
+
+<h2>
+<a id="contributing" class="anchor" href="#contributing" aria-hidden="true"><span class="octicon octicon-link"></span></a>Contributing</h2>
+
+<p><em>As a small disclaimer, minicap was the first time the author used C++, so even any non-functional changes to make the code more idiomatic (preferably without introducing new dependencies) are also very welcome, in addition to bug fixes and new features.</em></p>
+
+<p>See <a href="CONTRIBUTING.md">CONTRIBUTING.md</a>.</p>
+
+<h2>
+<a id="license" class="anchor" href="#license" aria-hidden="true"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>See <a href="LICENSE">LICENSE</a>.</p>
+
+<p>Copyright © CyberAgent, Inc. All Rights Reserved.</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/openstf/minicap">Minicap</a> is maintained by <a href="https://github.com/openstf">openstf</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
+
