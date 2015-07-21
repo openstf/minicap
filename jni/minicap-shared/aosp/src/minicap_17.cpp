@@ -115,10 +115,16 @@ public:
   consumePendingFrame(Minicap::Frame* frame) {
     android::status_t err;
 
-    err = mConsumer->lockNextBuffer(&mBuffer);
+    do {
+      // This may call Fence::waitForever() behind the scenes, which calls
+      // ioctl(), which may EINTR. Seems to mostly happen on Samsung devices
+      // for some reason.
+      err = mConsumer->lockNextBuffer(&mBuffer);
+    }
+    while (err == -EINTR);
 
     if (err != android::NO_ERROR) {
-      MCERROR("Unable to lock next buffer %s", error_name(err));
+      MCERROR("Unable to lock next buffer %s (%d)", error_name(err), err);
       return false;
     }
 
