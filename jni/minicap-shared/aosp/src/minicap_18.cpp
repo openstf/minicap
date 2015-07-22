@@ -201,7 +201,6 @@ private:
   createVirtualDisplay() {
     uint32_t sourceWidth, sourceHeight;
     uint32_t targetWidth, targetHeight;
-    uint32_t hint = 0;
     android::status_t err;
 
     switch (mDesiredOrientation) {
