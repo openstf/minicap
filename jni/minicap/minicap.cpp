@@ -146,7 +146,7 @@ putUInt32LE(unsigned char* data, int value) {
   data[3] = (value & 0xFF000000) >> 24;
 }
 
-static bool
+static int
 try_get_framebuffer_display_info(uint32_t displayId, Minicap::DisplayInfo* info) {
   char path[64];
   sprintf(path, "/dev/graphics/fb%d", displayId);
@@ -154,14 +154,14 @@ try_get_framebuffer_display_info(uint32_t displayId, Minicap::DisplayInfo* info)
   int fd = open(path, O_RDONLY);
   if (fd < 0) {
     MCERROR("Cannot open %s", path);
-    return false;
+    return -1;
   }
 
   fb_var_screeninfo vinfo;
   if (ioctl(fd, FBIOGET_VSCREENINFO, &vinfo) < 0) {
     close(fd);
     MCERROR("Cannot get FBIOGET_VSCREENINFO of %s", path);
-    return false;
+    return -1;
   }
 
   info->width = vinfo.xres;
@@ -180,7 +180,7 @@ try_get_framebuffer_display_info(uint32_t displayId, Minicap::DisplayInfo* info)
 
   close(fd);
 
-  return true;
+  return 0;
 }
 
 static FrameWaiter gWaiter;
@@ -267,8 +267,8 @@ main(int argc, char* argv[]) {
   if (showInfo) {
     Minicap::DisplayInfo info;
 
-    if (!minicap_try_get_display_info(displayId, &info)) {
-      if (!try_get_framebuffer_display_info(displayId, &info)) {
+    if (minicap_try_get_display_info(displayId, &info) != 0) {
+      if (try_get_framebuffer_display_info(displayId, &info) != 0) {
         MCERROR("Unable to get display info");
         return EXIT_FAILURE;
       }
@@ -363,19 +363,19 @@ main(int argc, char* argv[]) {
     break;
   }
 
-  if (!minicap->setRealInfo(realInfo)) {
+  if (minicap->setRealInfo(realInfo) != 0) {
     MCERROR("Minicap did not accept real display info");
     goto disaster;
   }
 
-  if (!minicap->setDesiredInfo(desiredInfo)) {
+  if (minicap->setDesiredInfo(desiredInfo) != 0) {
     MCERROR("Minicap did not accept desired display info");
     goto disaster;
   }
 
   minicap->setFrameAvailableListener(&gWaiter);
 
-  if (!minicap->applyConfigChanges()) {
+  if (minicap->applyConfigChanges() != 0) {
     MCERROR("Unable to start minicap with current config");
     goto disaster;
   }
@@ -391,7 +391,8 @@ main(int argc, char* argv[]) {
       goto disaster;
     }
 
-    if (!minicap->consumePendingFrame(&frame)) {
+    int err;
+    if ((err = minicap->consumePendingFrame(&frame)) != 0) {
       MCERROR("Unable to consume pending frame");
       goto disaster;
     }
@@ -447,7 +448,7 @@ main(int argc, char* argv[]) {
       continue;
     }
 
-    int pending;
+    int pending, err;
     while (!gWaiter.isStopped() && (pending = gWaiter.waitForFrame()) > 0) {
       if (skipFrames && pending > 1) {
         // Skip frames if we have too many. Not particularly thread safe,
@@ -456,18 +457,30 @@ main(int argc, char* argv[]) {
         gWaiter.reportExtraConsumption(pending - 1);
 
         while (--pending >= 1) {
-          if (!minicap->consumePendingFrame(&frame)) {
-            MCERROR("Unable to skip pending frame");
-            goto disaster;
+          if ((err = minicap->consumePendingFrame(&frame)) != 0) {
+            if (err == -EINTR) {
+              MCINFO("Frame consumption interrupted by EINTR");
+              goto close;
+            }
+            else {
+              MCERROR("Unable to skip pending frame");
+              goto disaster;
+            }
           }
 
           minicap->releaseConsumedFrame(&frame);
         }
       }
 
-      if (!minicap->consumePendingFrame(&frame)) {
-        MCERROR("Unable to consume pending frame");
-        goto disaster;
+      if ((err = minicap->consumePendingFrame(&frame)) != 0) {
+        if (err == -EINTR) {
+          MCINFO("Frame consumption interrupted by EINTR");
+          goto close;
+        }
+        else {
+          MCERROR("Unable to consume pending frame");
+          goto disaster;
+        }
       }
 
       haveFrame = true;
@@ -495,6 +508,7 @@ main(int argc, char* argv[]) {
       haveFrame = false;
     }
 
+close:
     MCINFO("Closing client connection");
     close(fd);
 

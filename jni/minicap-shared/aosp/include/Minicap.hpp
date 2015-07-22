@@ -71,11 +71,11 @@ public:
 
   // Applies changes made by setDesiredInfo() and setRealInfo(). Must be
   // called before attempting to wait or consume frames.
-  virtual bool
+  virtual int
   applyConfigChanges() = 0;
 
   // Consumes a frame. Must be called after waitForFrame().
-  virtual bool
+  virtual int
   consumePendingFrame(Frame* frame) = 0;
 
   // Peek behind the scenes to see which capture method is actually
@@ -100,7 +100,7 @@ public:
   // following properties are actually used: width, height and orientation.
   // After the configuration has been applied, new frames should satisfy
   // the requirements.
-  virtual bool
+  virtual int
   setDesiredInfo(const DisplayInfo& info) = 0;
 
   // Sets the frame available listener.
@@ -112,13 +112,13 @@ public:
   // android::DisplayInfo. The information has to be gathered somehow and then
   // passed on here. Currently only the following properties are actually
   // used: width and height.
-  virtual bool
+  virtual int
   setRealInfo(const DisplayInfo& info) = 0;
 };
 
 // Attempt to get information about the given display. This may segfault
 // on some devices due to manufacturer (mainly Samsung) customizations.
-bool
+int
 minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info);
 
 // Creates a new Minicap instance for the current platform.

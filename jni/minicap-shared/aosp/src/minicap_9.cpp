@@ -75,13 +75,13 @@ public:
     release();
   }
 
-  virtual bool
+  virtual int
   applyConfigChanges() {
     mUserFrameAvailableListener->onFrameAvailable();
-    return true;
+    return 0;
   }
 
-  virtual bool
+  virtual int
   consumePendingFrame(Minicap::Frame* frame) {
     uint32_t width, height;
     android::PixelFormat format;
@@ -93,7 +93,7 @@ public:
 
     if (err != android::NO_ERROR) {
       MCERROR("ComposerService::captureScreen() failed %s", error_name(err));
-      return false;
+      return err;
     }
 
     frame->data = mHeap->getBase();
@@ -104,7 +104,7 @@ public:
     frame->bpp = android::bytesPerPixel(format);
     frame->size = mHeap->getSize();
 
-    return true;
+    return 0;
   }
 
   virtual Minicap::CaptureMethod
@@ -128,11 +128,11 @@ public:
     return mUserFrameAvailableListener->onFrameAvailable();
   }
 
-  virtual bool
+  virtual int
   setDesiredInfo(const Minicap::DisplayInfo& info) {
     mDesiredWidth = info.width;
     mDesiredHeight = info.height;
-    return true;
+    return 0;
   }
 
   virtual void
@@ -140,9 +140,9 @@ public:
     mUserFrameAvailableListener = listener;
   }
 
-  virtual bool
+  virtual int
   setRealInfo(const Minicap::DisplayInfo& info) {
-    return true;
+    return 0;
   }
 
 private:
@@ -186,14 +186,14 @@ private:
   }
 };
 
-bool
+int
 minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   android::DisplayInfo dinfo;
   android::status_t err = android::SurfaceComposerClient::getDisplayInfo(displayId, &dinfo);
 
   if (err != android::NO_ERROR) {
     MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", error_name(err), err);
-    return false;
+    return err;
   }
 
   info->width = dinfo.w;
@@ -206,7 +206,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   info->secure = false;
   info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
 
-  return true;
+  return 0;
 }
 
 Minicap*

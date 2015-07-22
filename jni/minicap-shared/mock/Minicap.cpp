@@ -6,9 +6,9 @@
 
 #include "Minicap.hpp"
 
-bool
+int
 minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
-  return false;
+  return 0;
 }
 
 Minicap*

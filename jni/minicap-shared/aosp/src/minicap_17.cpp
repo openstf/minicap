@@ -102,7 +102,7 @@ public:
     release();
   }
 
-  virtual bool
+  virtual int
   applyConfigChanges() {
     if (mHaveRunningDisplay) {
       destroyVirtualDisplay();
@@ -111,15 +111,18 @@ public:
     return createVirtualDisplay();
   }
 
-  virtual bool
+  virtual int
   consumePendingFrame(Minicap::Frame* frame) {
     android::status_t err;
 
-    err = mConsumer->lockNextBuffer(&mBuffer);
-
-    if (err != android::NO_ERROR) {
-      MCERROR("Unable to lock next buffer %s", error_name(err));
-      return false;
+    if ((err = mConsumer->lockNextBuffer(&mBuffer)) != android::NO_ERROR) {
+      if (err == -EINTR) {
+        return err;
+      }
+      else {
+        MCERROR("Unable to lock next buffer %s (%d)", error_name(err), err);
+        return err;
+      }
     }
 
     frame->data = mBuffer.data;
@@ -132,7 +135,7 @@ public:
 
     mHaveBuffer = true;
 
-    return true;
+    return 0;
   }
 
   virtual Minicap::CaptureMethod
@@ -158,12 +161,12 @@ public:
     }
   }
 
-  virtual bool
+  virtual int
   setDesiredInfo(const Minicap::DisplayInfo& info) {
     mDesiredWidth = info.width;
     mDesiredHeight = info.height;
     mDesiredOrientation = info.orientation;
-    return true;
+    return 0;
   }
 
   virtual void
@@ -171,11 +174,11 @@ public:
     mUserFrameAvailableListener = listener;
   }
 
-  virtual bool
+  virtual int
   setRealInfo(const Minicap::DisplayInfo& info) {
     mRealWidth = info.width;
     mRealHeight = info.height;
-    return true;
+    return 0;
   }
 
 private:
@@ -194,10 +197,11 @@ private:
   bool mHaveRunningDisplay;
   android::CpuConsumer::LockedBuffer mBuffer;
 
-  bool
+  int
   createVirtualDisplay() {
     uint32_t sourceWidth, sourceHeight;
     uint32_t targetWidth, targetHeight;
+    android::status_t err;
 
     switch (mDesiredOrientation) {
     case Minicap::ORIENTATION_90:
@@ -236,9 +240,9 @@ private:
     android::sp<android::SurfaceComposerClient> sc = new android::SurfaceComposerClient();
 
     MCINFO("Performing SurfaceComposerClient init check");
-    if (sc->initCheck() != android::NO_ERROR) {
+    if ((err = sc->initCheck()) != android::NO_ERROR) {
       MCERROR("Unable to initialize SurfaceComposerClient");
-      return false;
+      return err;
     }
 
     // Create virtual display.
@@ -272,7 +276,7 @@ private:
 
     mHaveRunningDisplay = true;
 
-    return true;
+    return 0;
   }
 
   void
@@ -325,7 +329,7 @@ private:
   }
 };
 
-bool
+int
 minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   android::sp<android::IBinder> dpy = android::SurfaceComposerClient::getBuiltInDisplay(displayId);
 
@@ -334,7 +338,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
 
   if (err != android::NO_ERROR) {
     MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", error_name(err), err);
-    return false;
+    return err;
   }
 
   info->width = dinfo.w;
@@ -347,7 +351,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   info->secure = dinfo.secure;
   info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
 
-  return true;
+  return 0;
 }
 
 Minicap*
