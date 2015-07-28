@@ -123,7 +123,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info);
 
 // Creates a new Minicap instance for the current platform.
 Minicap*
-minicap_create(int32_t displayId);
+minicap_create(int32_t displayId, int fallback);
 
 // Frees a Minicap instance. Don't call delete yourself as it won't have
 // access to the platform-specific modifications.

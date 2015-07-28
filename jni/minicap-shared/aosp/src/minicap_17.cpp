@@ -26,7 +26,7 @@
 #include "mcdebug.h"
 
 static const char*
-error_name(int32_t err) {
+errorName(int32_t err) {
   switch (err) {
   case android::NO_ERROR: // also android::OK
     return "NO_ERROR";
@@ -69,6 +69,38 @@ error_name(int32_t err) {
   }
 }
 
+static Minicap::Format
+convertFormat(android::PixelFormat format) {
+  switch (format) {
+  case android::PIXEL_FORMAT_NONE:
+    return Minicap::FORMAT_NONE;
+  case android::PIXEL_FORMAT_CUSTOM:
+    return Minicap::FORMAT_CUSTOM;
+  case android::PIXEL_FORMAT_TRANSLUCENT:
+    return Minicap::FORMAT_TRANSLUCENT;
+  case android::PIXEL_FORMAT_TRANSPARENT:
+    return Minicap::FORMAT_TRANSPARENT;
+  case android::PIXEL_FORMAT_OPAQUE:
+    return Minicap::FORMAT_OPAQUE;
+  case android::PIXEL_FORMAT_RGBA_8888:
+    return Minicap::FORMAT_RGBA_8888;
+  case android::PIXEL_FORMAT_RGBX_8888:
+    return Minicap::FORMAT_RGBX_8888;
+  case android::PIXEL_FORMAT_RGB_888:
+    return Minicap::FORMAT_RGB_888;
+  case android::PIXEL_FORMAT_RGB_565:
+    return Minicap::FORMAT_RGB_565;
+  case android::PIXEL_FORMAT_BGRA_8888:
+    return Minicap::FORMAT_BGRA_8888;
+  case android::PIXEL_FORMAT_RGBA_5551:
+    return Minicap::FORMAT_RGBA_5551;
+  case android::PIXEL_FORMAT_RGBA_4444:
+    return Minicap::FORMAT_RGBA_4444;
+  default:
+    return Minicap::FORMAT_UNKNOWN;
+  }
+}
+
 class FrameProxy: public android::ConsumerBase::FrameAvailableListener {
 public:
   FrameProxy(Minicap::FrameAvailableListener* listener): mUserListener(listener) {
@@ -83,10 +115,10 @@ private:
   Minicap::FrameAvailableListener* mUserListener;
 };
 
-class MinicapImpl: public Minicap
+class VirtualDisplayMinicapImpl: public Minicap
 {
 public:
-  MinicapImpl(int32_t displayId)
+  VirtualDisplayMinicapImpl(int32_t displayId)
     : mDisplayId(displayId),
       mRealWidth(0),
       mRealHeight(0),
@@ -98,7 +130,7 @@ public:
   }
 
   virtual
-  ~MinicapImpl() {
+  ~VirtualDisplayMinicapImpl() {
     release();
   }
 
@@ -120,7 +152,7 @@ public:
         return err;
       }
       else {
-        MCERROR("Unable to lock next buffer %s (%d)", error_name(err), err);
+        MCERROR("Unable to lock next buffer %s (%d)", errorName(err), err);
         return err;
       }
     }
@@ -295,38 +327,101 @@ private:
 
     mHaveRunningDisplay = false;
   }
+};
 
-  static Minicap::Format
-  convertFormat(android::PixelFormat format) {
-    switch (format) {
-    case android::PIXEL_FORMAT_NONE:
-      return FORMAT_NONE;
-    case android::PIXEL_FORMAT_CUSTOM:
-      return FORMAT_CUSTOM;
-    case android::PIXEL_FORMAT_TRANSLUCENT:
-      return FORMAT_TRANSLUCENT;
-    case android::PIXEL_FORMAT_TRANSPARENT:
-      return FORMAT_TRANSPARENT;
-    case android::PIXEL_FORMAT_OPAQUE:
-      return FORMAT_OPAQUE;
-    case android::PIXEL_FORMAT_RGBA_8888:
-      return FORMAT_RGBA_8888;
-    case android::PIXEL_FORMAT_RGBX_8888:
-      return FORMAT_RGBX_8888;
-    case android::PIXEL_FORMAT_RGB_888:
-      return FORMAT_RGB_888;
-    case android::PIXEL_FORMAT_RGB_565:
-      return FORMAT_RGB_565;
-    case android::PIXEL_FORMAT_BGRA_8888:
-      return FORMAT_BGRA_8888;
-    case android::PIXEL_FORMAT_RGBA_5551:
-      return FORMAT_RGBA_5551;
-    case android::PIXEL_FORMAT_RGBA_4444:
-      return FORMAT_RGBA_4444;
-    default:
-      return FORMAT_UNKNOWN;
-    }
+class ScreenshotClientMinicapImpl: public Minicap {
+public:
+  ScreenshotClientMinicapImpl(int32_t displayId)
+    : mDisplayId(displayId),
+      mDisplay(android::SurfaceComposerClient::getBuiltInDisplay(displayId)),
+      mComposer(android::ComposerService::getComposerService()),
+      mDesiredWidth(0),
+      mDesiredHeight(0) {
   }
+
+  virtual
+  ~ScreenshotClientMinicapImpl() {
+    release();
+  }
+
+  virtual int
+  applyConfigChanges() {
+    mUserFrameAvailableListener->onFrameAvailable();
+    return 0;
+  }
+
+  virtual int
+  consumePendingFrame(Minicap::Frame* frame) {
+    uint32_t width, height;
+    android::PixelFormat format;
+    android::status_t err;
+
+    mHeap = NULL;
+    err = mComposer->captureScreen(mDisplay, &mHeap,
+      &width, &height, &format, mDesiredWidth, mDesiredHeight, 0, -1UL);
+
+    if (err != android::NO_ERROR) {
+      MCERROR("ComposerService::captureScreen() failed %s", errorName(err));
+      return err;
+    }
+
+    frame->data = mHeap->getBase();
+    frame->width = width;
+    frame->height = height;
+    frame->format = convertFormat(format);
+    frame->stride = width;
+    frame->bpp = android::bytesPerPixel(format);
+    frame->size = mHeap->getSize();
+
+    return 0;
+  }
+
+  virtual Minicap::CaptureMethod
+  getCaptureMethod() {
+    return METHOD_SCREENSHOT;
+  }
+
+  virtual int32_t
+  getDisplayId() {
+    return mDisplayId;
+  }
+
+  virtual void
+  release() {
+    mHeap = NULL;
+  }
+
+  virtual void
+  releaseConsumedFrame(Minicap::Frame* /* frame */) {
+    mHeap = NULL;
+    return mUserFrameAvailableListener->onFrameAvailable();
+  }
+
+  virtual int
+  setDesiredInfo(const Minicap::DisplayInfo& info) {
+    mDesiredWidth = info.width;
+    mDesiredHeight = info.height;
+    return 0;
+  }
+
+  virtual void
+  setFrameAvailableListener(Minicap::FrameAvailableListener* listener) {
+    mUserFrameAvailableListener = listener;
+  }
+
+  virtual int
+  setRealInfo(const Minicap::DisplayInfo& info) {
+    return 0;
+  }
+
+private:
+  int32_t mDisplayId;
+  android::sp<android::IBinder> mDisplay;
+  android::sp<android::ISurfaceComposer> mComposer;
+  android::sp<android::IMemoryHeap> mHeap;
+  uint32_t mDesiredWidth;
+  uint32_t mDesiredHeight;
+  Minicap::FrameAvailableListener* mUserFrameAvailableListener;
 };
 
 int
@@ -337,7 +432,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   android::status_t err = android::SurfaceComposerClient::getDisplayInfo(dpy, &dinfo);
 
   if (err != android::NO_ERROR) {
-    MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", error_name(err), err);
+    MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", errorName(err), err);
     return err;
   }
 
@@ -355,8 +450,15 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
 }
 
 Minicap*
-minicap_create(int32_t displayId) {
-  return new MinicapImpl(displayId);
+minicap_create(int32_t displayId, int fallback) {
+  switch (fallback) {
+  case 0:
+    return new VirtualDisplayMinicapImpl(displayId);
+  case 1:
+    return new ScreenshotClientMinicapImpl(displayId);
+  default:
+    return NULL;
+  }
 }
 
 void

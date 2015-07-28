@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 
 #include <cmath>
 #include <condition_variable>
@@ -27,6 +28,8 @@
 #define DEFAULT_SOCKET_NAME "minicap"
 #define DEFAULT_DISPLAY_ID 0
 #define DEFAULT_JPG_QUALITY 80
+
+#define EXIT_FALLBACK 7
 
 enum {
   QUIRK_DUMB            = 1,
@@ -186,7 +189,7 @@ try_get_framebuffer_display_info(uint32_t displayId, Minicap::DisplayInfo* info)
 static FrameWaiter gWaiter;
 
 static void
-signal_handler(int signum) {
+worker_signal_handler(int signum) {
   switch (signum) {
   case SIGINT:
     MCINFO("Received SIGINT, stopping");
@@ -196,6 +199,10 @@ signal_handler(int signum) {
     MCINFO("Received SIGTERM, stopping");
     gWaiter.stop();
     break;
+  case SIGSEGV:
+    MCERROR("Received SIGSEGV, terminating");
+    _exit(EXIT_FALLBACK);
+    break;
   default:
     abort();
     break;
@@ -203,7 +210,7 @@ signal_handler(int signum) {
 }
 
 int
-main(int argc, char* argv[]) {
+work(int argc, char* argv[], int fallback) {
   const char* pname = argv[0];
   const char* sockname = DEFAULT_SOCKET_NAME;
   uint32_t displayId = DEFAULT_DISPLAY_ID;
@@ -256,10 +263,11 @@ main(int argc, char* argv[]) {
   // Set up signal handler.
   struct sigaction sa;
   memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = signal_handler;
+  sa.sa_handler = worker_signal_handler;
   sigemptyset(&sa.sa_mask);
   sigaction(SIGTERM, &sa, NULL);
   sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGSEGV, &sa, NULL);
 
   // Start Android's thread pool so that it will be able to serve our requests.
   minicap_start_thread_pool();
@@ -319,6 +327,7 @@ main(int argc, char* argv[]) {
 
   std::cerr << "PID: " << getpid() << std::endl;
   std::cerr << "INFO: Using projection " << proj << std::endl;
+  std::cerr << "INFO: Using fallback method " << fallback << std::endl;
 
   // Disable STDOUT buffering.
   setbuf(stdout, NULL);
@@ -344,8 +353,9 @@ main(int argc, char* argv[]) {
   SimpleServer server;
 
   // Set up minicap.
-  Minicap* minicap = minicap_create(displayId);
+  Minicap* minicap = minicap_create(displayId, fallback);
   if (minicap == NULL) {
+    MCERROR("No suitable minicap implementation found");
     return EXIT_FAILURE;
   }
 
@@ -530,4 +540,34 @@ disaster:
   minicap_free(minicap);
 
   return EXIT_FAILURE;
+}
+
+int
+main(int argc, char* argv[]) {
+  int fallback = 0;
+
+  do {
+    pid_t pid;
+    int status;
+
+    if ((pid = fork()) == 0) {
+      _exit(work(argc, argv, fallback));
+    }
+    else if (pid > 0) {
+      wait(&status);
+
+      switch (WEXITSTATUS(status)) {
+      case EXIT_FALLBACK:
+        fallback += 1;
+        break;
+      default:
+        return status;
+      }
+    }
+    else {
+      MCERROR("Unable to fork worker");
+      return EXIT_FAILURE;
+    }
+  }
+  while (1);
 }

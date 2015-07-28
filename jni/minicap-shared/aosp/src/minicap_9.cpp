@@ -20,7 +20,7 @@
 #include "mcdebug.h"
 
 static const char*
-error_name(int32_t err) {
+errorName(int32_t err) {
   switch (err) {
   case android::NO_ERROR: // also android::OK
     return "NO_ERROR";
@@ -61,9 +61,9 @@ error_name(int32_t err) {
   }
 }
 
-class MinicapImpl: public Minicap {
+class ScreenshotClientMinicapImpl: public Minicap {
 public:
-  MinicapImpl(int32_t displayId)
+  ScreenshotClientMinicapImpl(int32_t displayId)
     : mDisplayId(displayId),
       mComposer(android::ComposerService::getComposerService()),
       mDesiredWidth(0),
@@ -71,7 +71,7 @@ public:
   }
 
   virtual
-  ~MinicapImpl() {
+  ~ScreenshotClientMinicapImpl() {
     release();
   }
 
@@ -92,7 +92,7 @@ public:
       &width, &height, &format, mDesiredWidth, mDesiredHeight);
 
     if (err != android::NO_ERROR) {
-      MCERROR("ComposerService::captureScreen() failed %s", error_name(err));
+      MCERROR("ComposerService::captureScreen() failed %s", errorName(err));
       return err;
     }
 
@@ -192,7 +192,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
   android::status_t err = android::SurfaceComposerClient::getDisplayInfo(displayId, &dinfo);
 
   if (err != android::NO_ERROR) {
-    MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", error_name(err), err);
+    MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", errorName(err), err);
     return err;
   }
 
@@ -210,8 +210,13 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
 }
 
 Minicap*
-minicap_create(int32_t displayId) {
-  return new MinicapImpl(displayId);
+minicap_create(int32_t displayId, int fallback) {
+  switch (fallback) {
+  case 0:
+    return new ScreenshotClientMinicapImpl(displayId);
+  default:
+    return NULL;
+  }
 }
 
 void

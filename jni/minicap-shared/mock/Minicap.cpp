@@ -12,7 +12,7 @@ minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
 }
 
 Minicap*
-minicap_create(int32_t displayId) {
+minicap_create(int32_t displayId, int fallback) {
   return NULL;
 }
 
