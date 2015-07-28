@@ -30,6 +30,7 @@
 #define DEFAULT_JPG_QUALITY 80
 
 #define EXIT_FALLBACK 7
+#define ALL_OPTIONS "d:n:P:F:siSth"
 
 enum {
   QUIRK_DUMB            = 1,
@@ -44,6 +45,7 @@ usage(const char* pname) {
     "  -d <id>:       Display ID. (%d)\n"
     "  -n <name>:     Change the name of the abtract unix domain socket. (%s)\n"
     "  -P <value>:    Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
+    "  -F <method>:   Start the fallback chain from a specific method.\n"
     "  -s:            Take a screenshot and output it to stdout. Needs -P.\n"
     "  -S:            Skip frames when they cannot be consumed quickly enough.\n"
     "  -t:            Attempt to get the capture method running, then exit.\n"
@@ -211,7 +213,6 @@ worker_signal_handler(int signum) {
 
 int
 work(int argc, char* argv[], int fallback) {
-  const char* pname = argv[0];
   const char* sockname = DEFAULT_SOCKET_NAME;
   uint32_t displayId = DEFAULT_DISPLAY_ID;
   unsigned int quality = DEFAULT_JPG_QUALITY;
@@ -222,7 +223,7 @@ work(int argc, char* argv[], int fallback) {
   Projection proj;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:n:P:siSth")) != -1) {
+  while ((opt = getopt(argc, argv, ALL_OPTIONS)) != -1) {
     switch (opt) {
     case 'd':
       displayId = atoi(optarg);
@@ -238,6 +239,9 @@ work(int argc, char* argv[], int fallback) {
       }
       break;
     }
+    case 'F':
+      // Handled in main().
+      break;
     case 's':
       takeScreenshot = true;
       break;
@@ -250,13 +254,6 @@ work(int argc, char* argv[], int fallback) {
     case 't':
       testOnly = true;
       break;
-    case 'h':
-      usage(pname);
-      return EXIT_SUCCESS;
-    case '?':
-    default:
-      usage(pname);
-      return EXIT_FAILURE;
     }
   }
 
@@ -544,7 +541,28 @@ disaster:
 
 int
 main(int argc, char* argv[]) {
+  const char* pname = argv[0];
   int fallback = 0;
+
+  // Only handle the fallback option, help and unknown options. Leave the
+  // rest for the worker.
+  int opt;
+  while ((opt = getopt(argc, argv, ALL_OPTIONS)) != -1) {
+    switch (opt) {
+    case 'F':
+      fallback = atoi(optarg);
+      break;
+    case 'h':
+      usage(pname);
+      return EXIT_SUCCESS;
+    case '?':
+      usage(pname);
+      return EXIT_FAILURE;
+    }
+  }
+
+  // Reset optind for worker's getopt().
+  optind = 1;
 
   do {
     pid_t pid;
