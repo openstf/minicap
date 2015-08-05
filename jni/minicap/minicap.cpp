@@ -194,15 +194,15 @@ static void
 worker_signal_handler(int signum) {
   switch (signum) {
   case SIGINT:
-    MCINFO("Received SIGINT, stopping");
+    MCINFO("Worker received SIGINT, stopping");
     gWaiter.stop();
     break;
   case SIGTERM:
-    MCINFO("Received SIGTERM, stopping");
+    MCINFO("Worker received SIGTERM, stopping");
     gWaiter.stop();
     break;
   case SIGSEGV:
-    MCERROR("Received SIGSEGV, terminating");
+    MCERROR("Worker received SIGSEGV, terminating");
     _exit(EXIT_FALLBACK);
     break;
   default:
@@ -322,7 +322,7 @@ work(int argc, char* argv[], int fallback) {
     return EXIT_FAILURE;
   }
 
-  std::cerr << "PID: " << getpid() << std::endl;
+  std::cerr << "WORKER PID: " << getpid() << std::endl;
   std::cerr << "INFO: Using projection " << proj << std::endl;
   std::cerr << "INFO: Using fallback method " << fallback << std::endl;
 
@@ -539,6 +539,21 @@ disaster:
   return EXIT_FAILURE;
 }
 
+static void
+main_signal_handler(int signum) {
+  switch (signum) {
+  case SIGINT:
+    MCINFO("Main received SIGINT, stopping");
+    break;
+  case SIGTERM:
+    MCINFO("Main received SIGTERM, stopping");
+    break;
+  default:
+    abort();
+    break;
+  }
+}
+
 int
 main(int argc, char* argv[]) {
   const char* pname = argv[0];
@@ -561,18 +576,39 @@ main(int argc, char* argv[]) {
     }
   }
 
+  // Set up signal handler.
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = main_signal_handler;
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGTERM, &sa, NULL);
+  sigaction(SIGINT, &sa, NULL);
+
   // Reset optind for worker's getopt().
   optind = 1;
 
+  std::cerr << "MAIN PID: " << getpid() << std::endl;
+
   do {
     pid_t pid;
-    int status;
+    int status = 0;
 
     if ((pid = fork()) == 0) {
       _exit(work(argc, argv, fallback));
     }
     else if (pid > 0) {
-      wait(&status);
+      while (wait(&status) == -1) {
+        if (errno == EINTR) {
+          if (kill(pid, SIGTERM) == -1) {
+            MCERROR("Unable to kill worker from main");
+            return EXIT_FAILURE;
+          }
+        }
+        else {
+          MCERROR("Unable to wait for worker status");
+          return EXIT_FAILURE;
+        }
+      }
 
       switch (WEXITSTATUS(status)) {
       case EXIT_FALLBACK:
