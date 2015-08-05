@@ -568,10 +568,7 @@ main(int argc, char* argv[]) {
     pid_t pid;
     int status;
 
-    // Reset optind for worker's getopt().
-    optind = 1;
-
-    if ((pid = vfork()) == 0) {
+    if ((pid = fork()) == 0) {
       _exit(work(argc, argv, fallback));
     }
     else if (pid > 0) {
