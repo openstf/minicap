@@ -4,7 +4,7 @@
 set -exo pipefail
 
 # Build project
-ndk-build 1>&2
+ndk-build NDK_DEBUG=1 1>&2
 
 # Figure out which ABI and SDK the device has
 abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
