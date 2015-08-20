@@ -38,7 +38,7 @@ libs/android-9/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_9.cpp
 		-v $(this_dir)$(@D):/artifacts \
 		openstf/aosp:jdk6 /aosp.sh build generic-eng minicap
 
-libs/android-10/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_10.cpp
+libs/android-10/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_9.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
