@@ -140,6 +140,10 @@ Should an error occur, you can try running the command again. Depending on your 
 
 Checking out a single branch will easily take a few hours, but it is considerably faster than setting up a full mirror.
 
+### Saving disk space (optional)
+
+If you're sure that you'll never need to use the Android `repo` tool on a branch you've already checked out, you can save ~40-50% of disk space by deleting the `.repo` folder inside each branch. However, be very careful not to delete the mirror's `.repo`, since you'll probably want to update it at some point in the future.
+
 ### Building
 
 There's a `Makefile` in the `aosp` folder containing a build command for each SDK level and architecture we're interested in. If you're developing on Linux directly you may be able to `make` the libraries directly.
