@@ -5,8 +5,10 @@ LOCAL_MODULE := minicap
 
 LOCAL_MODULE_TAGS := optional
 
-ifeq      ($(OVERRIDE_PLATFORM_SDK_VERSION),M)
-LOCAL_SRC_FILES += src/minicap_M.cpp
+ifeq      ($(OVERRIDE_PLATFORM_SDK_VERSION),23)
+LOCAL_SRC_FILES += src/minicap_23.cpp
+else ifeq ($(PLATFORM_SDK_VERSION),23)
+LOCAL_SRC_FILES += src/minicap_23.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),22)
 LOCAL_SRC_FILES += src/minicap_22.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),21)

@@ -40,17 +40,17 @@ Currently the following branches are required to build the libraries for all sup
 
 | Branch              | SDK | Docker image to build with    |
 |---------------------|-----|-------------------------------|
-| android-2.3_r1      | 9   | openstf/aosp:jdk6              |
-| android-2.3.3_r1    | 10  | openstf/aosp:jdk6              |
-| android-4.0.1_r1    | 14  | openstf/aosp:jdk6              |
-| android-4.0.3_r1    | 15  | openstf/aosp:jdk6              |
-| android-4.1.1_r1    | 16  | openstf/aosp:jdk6              |
-| android-4.2_r1      | 17  | openstf/aosp:jdk6              |
-| android-4.3_r1      | 18  | openstf/aosp:jdk6              |
-| android-4.4_r1      | 19  | openstf/aosp:jdk6              |
-| android-5.0.1_r1    | 21  | openstf/aosp:jdk7              |
-| android-5.1.0_r1    | 22  | openstf/aosp:jdk7              |
-| android-m-preview   | M   | openstf/aosp:jdk7              |
+| android-2.3_r1      | 9   | openstf/aosp:jdk6             |
+| android-2.3.3_r1    | 10  | openstf/aosp:jdk6             |
+| android-4.0.1_r1    | 14  | openstf/aosp:jdk6             |
+| android-4.0.3_r1    | 15  | openstf/aosp:jdk6             |
+| android-4.1.1_r1    | 16  | openstf/aosp:jdk6             |
+| android-4.2_r1      | 17  | openstf/aosp:jdk6             |
+| android-4.3_r1      | 18  | openstf/aosp:jdk6             |
+| android-4.4_r1      | 19  | openstf/aosp:jdk6             |
+| android-5.0.1_r1    | 21  | openstf/aosp:jdk7             |
+| android-5.1.0_r1    | 22  | openstf/aosp:jdk7             |
+| android-m-preview-2 | 23  | openstf/aosp:jdk7             |
 
 Furthermore, to make use of our provided Makefile, you should check out the branches to `/srv/aosp` for maximum ease of use.
 
