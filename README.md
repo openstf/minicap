@@ -1,4 +1,5 @@
 # minicap
+[![Build Status](https://travis-ci.org/quamotion/minicap.svg?branch=features%2Ftravis)](https://travis-ci.org/quamotion/minicap)
 
 Minicap provides a socket interface for streaming realtime screen capture data out of Android devices. It is meant to be used as a component in a larger program and is therefore not immensely useful just by itself. For example, it is being used in [STF](https://github.com/openstf/stf) for remote control.
 

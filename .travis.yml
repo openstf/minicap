@@ -1,0 +1,22 @@
+env:
+  global:
+    - ANDROID_NDK_VERSION=r10e
+    - ANDROID_NDK_HOME=${TRAVIS_BUILD_DIR}/travis/android-ndk-${ANDROID_NDK_VERSION}
+    - PATH=${PATH}:${ANDROID_NDK_HOME}
+
+install:
+  - ./travis/install-dependencies.sh
+
+script:
+  - $ANDROID_NDK_HOME/ndk-build
+
+after_success:
+  - tar -zcvf minicap.tar.gz -C libs .
+
+deploy:
+  provider: releases
+  file: minicap.tar.gz
+  skip_cleanup: true
+  on:
+    tags: true
+
