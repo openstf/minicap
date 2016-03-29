@@ -125,13 +125,22 @@ public:
       }
     }
 
-    frame->data = mBuffer.data;
-    frame->format = convertFormat(mBuffer.format);
-    frame->width = mBuffer.width;
-    frame->height = mBuffer.height;
-    frame->stride = mBuffer.stride;
-    frame->bpp = android::bytesPerPixel(mBuffer.format);
-    frame->size = mBuffer.stride * mBuffer.height * frame->bpp;
+    mScreenshotClient.update(mVirtualDisplay, android::Rect(), false);
+    frame->data = mScreenshotClient.getPixels();
+    frame->format = convertFormat(mScreenshotClient.getFormat());
+    frame->width = mScreenshotClient.getWidth();
+    frame->height = mScreenshotClient.getHeight();
+    frame->stride = mScreenshotClient.getStride();
+    frame->bpp = android::bytesPerPixel(mScreenshotClient.getFormat());
+    frame->size = mScreenshotClient.getSize();
+
+    //frame->data = mBuffer.data;
+    //frame->format = convertFormat(mBuffer.format);
+    //frame->width = mBuffer.width;
+    //frame->height = mBuffer.height;
+    //frame->stride = mBuffer.stride;
+    //frame->bpp = android::bytesPerPixel(mBuffer.format);
+    //frame->size = mBuffer.stride * mBuffer.height * frame->bpp;
 
     mHaveBuffer = true;
 
@@ -197,6 +206,7 @@ private:
   bool mHaveBuffer;
   bool mHaveRunningDisplay;
   android::CpuConsumer::LockedBuffer mBuffer;
+  android::ScreenshotClient mScreenshotClient;
 
   int
   createVirtualDisplay() {
