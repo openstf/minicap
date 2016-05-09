@@ -79,12 +79,12 @@ adb pull /system/bin/linker $out/linker
 adb pull /system/$libpath $out
 
 # Launch gdbserver
-adb shell $dir/gdbserver +$dir/debug-socket --attach $pid &
+adb shell $dir/gdbserver :5039 --attach $pid &
 gdbserver_pid=$!
 trap "kill $gdbserver_pid 2>/dev/null" EXIT
 
 # Set up the forward
-adb forward tcp:5039 localfilesystem:$dir/debug-socket
+adb forward tcp:5039 tcp:5039
 
 # Find initial gdb.setup
 cp -f "$gdb_setup" gdb.setup
