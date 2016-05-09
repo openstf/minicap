@@ -182,6 +182,30 @@ Appears a potentially unlimited number of times.
 | 0-3   | 4 | uint32 (low endian) | Frame size in bytes (=n) |
 | 4-(n+4) | n | unsigned char[] | Frame in JPG format |
 
+## Debugging
+
+You can use `gdb` to debug more complex issues. It is assumed that you already know how to use it. Here's how to get it running.
+
+First, if you haven't already, make sure to build your project with the `NDK_DEBUG` option enabled, as follows.
+
+```bash
+ndk-build NDK_DEBUG=1
+```
+
+This will create `gdb.setup` and the `gdb` binaries themselves.
+
+If you don't have `NDK_ROOT` set up yet, do it now like below. You may have to change the path, the sample path below works on OS X with Android Studio's NDK bundle (which you'll have to install as well).
+
+```bash
+export NDK_ROOT="$HOME/Library/Android/sdk/ndk-bundle"
+```
+
+Next, be sure that minicap is actually running. Just running `./run.sh autosize` is enough.
+
+Finally, you should be able to just run `./ndk.sh` in a separate shell (you'll have to keep minicap running at the same time). It will pull all necessary libraries from the device to ease debugging, and you should end up at a functioning gdb shell. The `ndk.sh` script has been adapted from `ndk-gdb` for stand-alone binaries.
+
+Improvements are welcome.
+
 ## Contributing
 
 _As a small disclaimer, minicap was the first time the author used C++, so even any non-functional changes to make the code more idiomatic (preferably without introducing new dependencies) are also very welcome, in addition to bug fixes and new features._
