@@ -34,7 +34,8 @@ fi
 
 # Create a directory for our resources
 dir=/data/local/tmp/minicap-devel
-adb shell "mkdir $dir 2>/dev/null"
+# Keep compatible with older devices that don't have `mkdir -p`.
+adb shell "mkdir $dir 2>/dev/null || true"
 
 # Upload the binary
 adb push libs/$abi/$bin $dir
