@@ -1,0 +1,24 @@
+{
+  "name": "minicap-prebuilt",
+  "version": "1.0.0",
+  "description": "Prebuilt binaries of minicap.",
+  "keywords": [
+    "minicap"
+  ],
+  "bugs": {
+    "url": "https://github.com/openstf/minicap/issues"
+  },
+  "license": "Apache-2.0",
+  "author": {
+    "name": "The OpenSTF Project",
+    "email": "contact@openstf.io",
+    "url": "https://openstf.io"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openstf/minicap.git"
+  },
+  "scripts": {
+    "prepublish": "make"
+  }
+}

@@ -1,0 +1,16 @@
+/.env
+/.gitmodules
+/.npmignore
+/*.tgz
+/build-remote.sh
+/CONTRIBUTING.md
+/example/
+/gdb.setup
+/gdb.sh
+/jni/
+/libs/
+/Makefile
+/obj/
+/run.sh
+/temp/
+/yarn-error.log
