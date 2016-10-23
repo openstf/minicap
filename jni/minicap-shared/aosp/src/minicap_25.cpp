@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <math.h>
+#include <dlfcn.h>
 
 #include <binder/ProcessState.h>
 
@@ -268,7 +269,30 @@ private:
 
     MCINFO("Publishing virtual display");
     android::SurfaceComposerClient::openGlobalTransaction();
-    android::SurfaceComposerClient::setDisplaySurface(mVirtualDisplay, mBufferProducer);
+
+    // Well, this is just horrible. Thanks 7.1 Developer Preview.
+    typedef void (*setDisplaySurfaceAOSP_t)(android::sp<android::IBinder> const&, android::sp<android::IGraphicBufferProducer> const&);
+    typedef void (*setDisplaySurface71DP_t)(android::sp<android::IBinder> const&, android::sp<android::IGraphicBufferProducer>);
+
+    // This is the standard AOSP symbol.
+    setDisplaySurfaceAOSP_t setDisplaySurfaceAOSP = (setDisplaySurfaceAOSP_t) dlsym(RTLD_DEFAULT, "_ZN7android21SurfaceComposerClient17setDisplaySurfaceERKNS_2spINS_7IBinderEEERKNS1_INS_22IGraphicBufferProducerEEE");
+    if (setDisplaySurfaceAOSP != NULL) {
+      // Yay! Things are like they're supposed to be!
+      setDisplaySurfaceAOSP(mVirtualDisplay, mBufferProducer);
+    }
+    else {
+      // This is the 7.1 Developer Preview symbol.
+      setDisplaySurface71DP_t setDisplaySurface71DP = (setDisplaySurface71DP_t) dlsym(RTLD_DEFAULT, "_ZN7android21SurfaceComposerClient17setDisplaySurfaceERKNS_2spINS_7IBinderEEENS1_INS_22IGraphicBufferProducerEEE");
+      if (setDisplaySurface71DP != NULL) {
+        MCINFO("Found 7.1 Developer Preview SurfaceComposerClient::setDisplaySurface");
+        setDisplaySurface71DP(mVirtualDisplay, mBufferProducer);
+      }
+      else {
+        MCERROR("Unable to find AOSP or 7.1 DP style SurfaceComposerClient::setDisplaySurface");
+        return android::NAME_NOT_FOUND;
+      }
+    }
+
     android::SurfaceComposerClient::setDisplayProjection(mVirtualDisplay,
       android::DISPLAY_ORIENTATION_0, layerStackRect, visibleRect);
     android::SurfaceComposerClient::setDisplayLayerStack(mVirtualDisplay, 0); // default stack

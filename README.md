@@ -4,8 +4,6 @@ Minicap provides a socket interface for streaming realtime screen capture data o
 
 Minicap works without root if started via [ADB](http://developer.android.com/tools/help/adb.html) on SDK 25 (Android 7.1) and lower. The lowest SDK level we build for is 9 (i.e. Android 2.3). Minicap also works on Android Wear. Emulators, however, are not supported. Note that Android 3.x is not supported since those versions were never open sourced.
 
-**7.1 Developer Preview on non-Pixel devices (e.g. Nexus 5X) currently does not work due to a symbol mismatch with the AOSP branch, unclear whether 7.1 on Pixel works or not. Pixel has not been released in our country and Google made purchasing from other regions very difficult. Please consider donating a Pixel to us if your company relies on minicap.**
-
 To capture the screen we currently use two methods. For older Android versions we use the ScreenshotClient, a private API in AOSP. For newer versions we use a virtual display, which also requires access to private APIs. The frames are then encoded using SIMD-enabled [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/) and sent over a socket interface. A planned future improvement to allow for even higher FPS is to use MediaRecorder and friends to take advantage of hardware encoding.
 
 Since minicap relies on private APIs, some devices may not work. At the time of writing, we have tested it on approximately 160 devices (incl. a few duplicates), and have so far found three models that segfault. They are Xiaomi "HM NOTE 1W" (Redmi Note 1W), Huawei "G750-U10" (Honor 3X) and Lenovo "B6000-F" (Yoga Tablet 8). We will continue to look for solutions for these devices when there's time.
