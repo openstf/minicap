@@ -11,8 +11,11 @@
 #include <binder/IServiceManager.h>
 #include <binder/IMemory.h>
 
+#include "override-17/BufferQueue.h"
+#include "override-17/ConsumerBase.h"
+#include "override-17/CpuConsumer.h"
+
 #include <gui/BufferQueue.h>
-#include <gui/CpuConsumer.h>
 #include <gui/ISurfaceComposer.h>
 #include <gui/Surface.h>
 #include <gui/SurfaceComposerClient.h>

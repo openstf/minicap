@@ -29,7 +29,11 @@ endif
 else ifeq ($(PLATFORM_SDK_VERSION),18)
 LOCAL_SRC_FILES += src/minicap_18.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),17)
-LOCAL_SRC_FILES += src/minicap_17.cpp
+LOCAL_SRC_FILES += src/minicap_17.cpp \
+	src/override-17/BufferQueue.cpp \
+	src/override-17/ConsumerBase.cpp \
+	src/override-17/CpuConsumer.cpp
+
 else ifeq ($(PLATFORM_SDK_VERSION),16)
 LOCAL_SRC_FILES += src/minicap_16.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),15)
@@ -54,6 +58,10 @@ ifeq ($(PLATFORM_SDK_VERSION),$(filter $(PLATFORM_SDK_VERSION),10 9))
 LOCAL_SHARED_LIBRARIES += libsurfaceflinger_client
 else
 LOCAL_SHARED_LIBRARIES += libgui
+endif
+
+ifeq ($(PLATFORM_SDK_VERSION),17)
+LOCAL_SHARED_LIBRARIES += libEGL
 endif
 
 LOCAL_C_INCLUDES += \
