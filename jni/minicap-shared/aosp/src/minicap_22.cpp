@@ -69,9 +69,11 @@ error_name(int32_t err) {
   }
 }
 
-struct CompatFrameAvailableListener : public virtual android::RefBase{
+// This trick is needed for many Samsung devices running 5.1. Examples include
+// Galaxy S5 Neo, Galaxy J1, Galaxy A8 and so on.
+struct CompatFrameAvailableListener : public virtual android::RefBase {
   virtual void onFrameAvailable(const android::BufferItem& item) = 0;
-  virtual void onFrameReplaced(){};
+  virtual void onFrameReplaced() {};
 };
 
 class FrameProxy: public CompatFrameAvailableListener {
