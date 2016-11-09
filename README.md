@@ -6,7 +6,7 @@ Minicap works without root if started via [ADB](http://developer.android.com/too
 
 To capture the screen we currently use two methods. For older Android versions we use the ScreenshotClient, a private API in AOSP. For newer versions we use a virtual display, which also requires access to private APIs. The frames are then encoded using SIMD-enabled [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/) and sent over a socket interface. A planned future improvement to allow for even higher FPS is to use MediaRecorder and friends to take advantage of hardware encoding.
 
-Since minicap relies on private APIs, some devices may not work. At the time of writing, we have tested it on approximately 160 devices (incl. a few duplicates), and have so far found three models that segfault. They are Xiaomi "HM NOTE 1W" (Redmi Note 1W), Huawei "G750-U10" (Honor 3X) and Lenovo "B6000-F" (Yoga Tablet 8). We will continue to look for solutions for these devices when there's time.
+In principle, every device should work. However, since minicap relies on private APIs, some may now. Please let us know by creating a GitHub issue about that device.
 
 The project consists of two parts. There's the main binary that can be built using NDK alone. The other part is a shared library that's built for each SDK level and each architecture inside the AOSP source tree. We ship precompiled libraries in this repo, but any modifications to the code used by these shared libraries require a recompile against the corresponding AOSP branches. This can be a major pain, but we have several utilities to help with the ordeal. If you're interested in that, [read the build instructions here](jni/minicap-shared/README.md).
 
