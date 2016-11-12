@@ -11,15 +11,6 @@
 #include <binder/IServiceManager.h>
 #include <binder/IMemory.h>
 
-#ifdef USE_CUSTOM_CONSUMER
-// Unfortunately some makers customize these. However, since they don't
-// contain any critical data, we can "simply" provide an overriding
-// implementation. This is needed for at least ASUS MemoPads running
-// Android 4.4. Note that this will NOT work on all devices.
-#include "override-19/ConsumerBase.h"
-#include "override-19/CpuConsumer.h"
-#endif
-
 // Terrible hack to access ScreenshotClient's mBufferQueue. It's too risky
 // to do `new android::BufferQueue()` by ourselves, makers tend to customize
 // it.
@@ -276,7 +267,10 @@ private:
     mBufferQueue = mScreenshotClient.mBufferQueue;
 
     MCINFO("Creating CPU consumer");
-    mConsumer = new android::CpuConsumer(mBufferQueue, 3, false);
+    // Some devices have a modified, larger CpuConsumer. Try to account
+    // for that by increasing the size. Example devices include Asus MeMO
+    // Pad 7 (ME176).
+    mConsumer = new(operator new(sizeof(android::CpuConsumer) + 100)) android::CpuConsumer(mBufferQueue, 3, false);
     mConsumer->setName(android::String8("minicap"));
     mConsumer->setDefaultBufferSize(targetWidth, targetHeight);
     mConsumer->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
