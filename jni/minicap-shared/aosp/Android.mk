@@ -17,15 +17,6 @@ else ifeq ($(PLATFORM_SDK_VERSION),21)
 LOCAL_SRC_FILES += src/minicap_21.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),19)
 LOCAL_SRC_FILES += src/minicap_19.cpp
-
-ifeq ($(TARGET_ARCH),x86)
-LOCAL_SRC_FILES += \
-	src/override-19/ConsumerBase.cpp \
-	src/override-19/CpuConsumer.cpp
-LOCAL_CFLAGS += \
-	-DUSE_CUSTOM_CONSUMER=1
-endif
-
 else ifeq ($(PLATFORM_SDK_VERSION),18)
 LOCAL_SRC_FILES += src/minicap_18.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),17)
