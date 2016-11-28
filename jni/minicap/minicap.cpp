@@ -41,6 +41,7 @@ usage(const char* pname) {
     "  -d <id>:       Display ID. (%d)\n"
     "  -n <name>:     Change the name of the abtract unix domain socket. (%s)\n"
     "  -P <value>:    Display projection (<w>x<h>@<w>x<h>/{0|90|180|270}).\n"
+    "  -Q <value>:    JPEG quality (0-100).\n"
     "  -s:            Take a screenshot and output it to stdout. Needs -P.\n"
     "  -S:            Skip frames when they cannot be consumed quickly enough.\n"
     "  -t:            Attempt to get the capture method running, then exit.\n"
@@ -215,7 +216,7 @@ main(int argc, char* argv[]) {
   Projection proj;
 
   int opt;
-  while ((opt = getopt(argc, argv, "d:n:P:siSth")) != -1) {
+  while ((opt = getopt(argc, argv, "d:n:P:Q:siSth")) != -1) {
     switch (opt) {
     case 'd':
       displayId = atoi(optarg);
@@ -231,6 +232,9 @@ main(int argc, char* argv[]) {
       }
       break;
     }
+    case 'Q':
+      quality = atoi(optarg);
+      break;
     case 's':
       takeScreenshot = true;
       break;
