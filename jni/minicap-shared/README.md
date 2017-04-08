@@ -53,6 +53,7 @@ Currently the following branches are required to build the libraries for all sup
 | android-6.0.0_r1    | 23  | openstf/aosp:jdk7             |
 | android-7.0.0_r1    | 24  | openstf/aosp:jdk8             |
 | android-7.1.0_r1    | 25  | openstf/aosp:jdk8             |
+| android-o-preview-1 | 26  | openstf/aosp:jdk8             |
 
 Furthermore, to make use of our provided Makefile, you should check out the branches to `/media/aosp` for maximum ease of use.
 

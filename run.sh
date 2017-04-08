@@ -9,7 +9,12 @@ ndk-build NDK_DEBUG=1 1>&2
 # Figure out which ABI and SDK the device has
 abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
 sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
+pre=$(adb shell getprop ro.build.version.preview_sdk | tr -d '\r')
 rel=$(adb shell getprop ro.build.version.release | tr -d '\r')
+
+if [[ ! -z "$pre" ]]; then
+  sdk=$(($sdk + $pre))
+fi
 
 # PIE is only supported since SDK 16
 if (($sdk >= 16)); then

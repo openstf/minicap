@@ -1,7 +1,8 @@
+/*.tgz
 /.env
 /gdb.setup
 /libs/
-/obj/
 /libs/
+/obj/
 /prebuilt/
 /temp/
