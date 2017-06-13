@@ -33,7 +33,7 @@ git submodule update
 
 You're now ready to proceed.
 
-Building requires [NDK](https://developer.android.com/tools/sdk/ndk/index.html), and is known to work with at least with NDK Revision 10e (May 2015). Older versions do not work due to the lack of `.asm` file support for x86_64.
+Building requires [NDK](https://developer.android.com/tools/sdk/ndk/index.html), and is known to work with at least with NDK Revision 10e (May 2015). Older versions do not work due to the lack of `.asm` file support for x86_64. **Important note: NDK 15 no longer supports Android platforms earlier than SDK level 14. This means that if compiled on NDK 15 or later, the binaries may or may not work on earlier platforms (e.g. Android 2.3, Android 2.3.3).**
 
 Then it's simply a matter of invoking `ndk-build`.
 
