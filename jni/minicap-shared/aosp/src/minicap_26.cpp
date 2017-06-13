@@ -259,30 +259,9 @@ private:
     );
 
     MCINFO("Creating buffer queue");
+    android::BufferQueue::createBufferQueue(&mBufferProducer, &mBufferConsumer, false);
 
-    // Yay, more horrible! Thanks O Developer Preview 1.
-    typedef void (*createBufferQueueAOSP_t)(android::sp<android::IGraphicBufferProducer>*, android::sp<android::IGraphicBufferConsumer>*, android::sp<android::IGraphicBufferAlloc> const&);
-    typedef void (*createBufferQueueODP1_t)(android::sp<android::IGraphicBufferProducer>*, android::sp<android::IGraphicBufferConsumer>*, android::sp<android::IGraphicBufferAlloc> const&, bool);
-
-    // This is the standard AOSP symbol.
-    createBufferQueueAOSP_t createBufferQueueAOSP = (createBufferQueueAOSP_t) dlsym(RTLD_DEFAULT, "_ZN7android11BufferQueue17createBufferQueueEPNS_2spINS_22IGraphicBufferProducerEEEPNS1_INS_22IGraphicBufferConsumerEEERKNS1_INS_19IGraphicBufferAllocEEE");
-    if (createBufferQueueAOSP != NULL) {
-      // Yay! Things are like they're supposed to be!
-      createBufferQueueAOSP(&mBufferProducer, &mBufferConsumer, NULL);
-    }
-    else {
-      // This is the O Developer Preview 1 symbol.
-      createBufferQueueODP1_t createBufferQueueODP1 = (createBufferQueueODP1_t) dlsym(RTLD_DEFAULT, "_ZN7android11BufferQueue17createBufferQueueEPNS_2spINS_22IGraphicBufferProducerEEEPNS1_INS_22IGraphicBufferConsumerEEERKNS1_INS_19IGraphicBufferAllocEEEb");
-      if (createBufferQueueODP1 != NULL) {
-        MCINFO("Found O Developer Preview 1 BufferQueue::createBufferQueue");
-        createBufferQueueODP1(&mBufferProducer, &mBufferConsumer, NULL, false);
-      }
-      else {
-        MCERROR("Unable to find neither AOSP nor O Developer Preview 1 BufferQueue::createBufferQueue");
-        return android::NAME_NOT_FOUND;
-      }
-    }
-
+    MCINFO("Setting buffer options");
     mBufferConsumer->setDefaultBufferSize(targetWidth, targetHeight);
     mBufferConsumer->setDefaultBufferFormat(android::PIXEL_FORMAT_RGBA_8888);
 
