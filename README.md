@@ -2,11 +2,11 @@
 
 Minicap provides a socket interface for streaming realtime screen capture data out of Android devices. It is meant to be used as a component in a larger program and is therefore not immensely useful just by itself. For example, it is being used in [STF](https://github.com/openstf/stf) for remote control.
 
-Minicap works without root if started via [ADB](http://developer.android.com/tools/help/adb.html) on SDK 26 (Android O) and lower. The lowest SDK level we build for is 9 (i.e. Android 2.3). Minicap also works on Android Wear. Emulators, however, are not supported. Note that Android 3.x is not supported since those versions were never open sourced.
+Minicap works without root if started via [ADB](http://developer.android.com/tools/help/adb.html) on SDK 26 (Android O) and lower. The lowest SDK level we build for is 9 (i.e. Android 2.3). Minicap also works on Android Wear. Developer previews are, in general, supported once Google releases the source code for that release. _Only the latest Developer Preview is supported, and only until there's a stable release._ Emulators are not supported. Note that Android 3.x is not supported since those versions were never open sourced.
 
 To capture the screen we currently use two methods. For older Android versions we use the ScreenshotClient, a private API in AOSP. For newer versions we use a virtual display, which also requires access to private APIs. The frames are then encoded using SIMD-enabled [libjpeg-turbo](http://libjpeg-turbo.virtualgl.org/) and sent over a socket interface. A planned future improvement to allow for even higher FPS is to use MediaRecorder and friends to take advantage of hardware encoding.
 
-In principle, every device should work. However, since minicap relies on private APIs, some may now. Please let us know by creating a GitHub issue about that device.
+In principle, every device should work. However, since minicap relies on private APIs, some may not. Please let us know by creating a GitHub issue about that device.
 
 The project consists of two parts. There's the main binary that can be built using NDK alone. The other part is a shared library that's built for each SDK level and each architecture inside the AOSP source tree. We ship precompiled libraries in this repo, but any modifications to the code used by these shared libraries require a recompile against the corresponding AOSP branches. This can be a major pain, but we have several utilities to help with the ordeal. If you're interested in that, [read the build instructions here](jni/minicap-shared/README.md).
 
