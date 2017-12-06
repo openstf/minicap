@@ -499,58 +499,52 @@ libs/android-27/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_27.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
-		-v /media/aosp/android-8.0.0_r1:/aosp \
+		-v /media/aosp/android-8.1.0_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		-e OVERRIDE_PLATFORM_SDK_VERSION=27 \
 		openstf/aosp:jdk8 /aosp.sh build aosp_arm-eng minicap
 
 libs/android-27/arm64-v8a/minicap.so: $(SOURCES) src/minicap_27.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
-		-v /media/aosp/android-8.0.0_r1:/aosp \
+		-v /media/aosp/android-8.1.0_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		-e OVERRIDE_PLATFORM_SDK_VERSION=27 \
 		openstf/aosp:jdk8 /aosp.sh build aosp_arm64-eng minicap
 
 libs/android-27/x86/minicap.so: $(SOURCES) src/minicap_27.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
-		-v /media/aosp/android-8.0.0_r1:/aosp \
+		-v /media/aosp/android-8.1.0_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		-e OVERRIDE_PLATFORM_SDK_VERSION=27 \
 		openstf/aosp:jdk8 /aosp.sh build aosp_x86-eng minicap
 
 libs/android-27/x86_64/minicap.so: $(SOURCES) src/minicap_27.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
-		-v /media/aosp/android-8.0.0_r1:/aosp \
+		-v /media/aosp/android-8.1.0_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		-e OVERRIDE_PLATFORM_SDK_VERSION=27 \
 		openstf/aosp:jdk8 /aosp.sh build aosp_x86_64-eng minicap
 
 libs/android-27/mips/minicap.so: $(SOURCES) src/minicap_27.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
-		-v /media/aosp/android-8.0.0_r1:/aosp \
+		-v /media/aosp/android-8.1.0_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		-e OVERRIDE_PLATFORM_SDK_VERSION=27 \
 		openstf/aosp:jdk8 /aosp.sh build aosp_mips-eng minicap
 
 libs/android-27/mips64/minicap.so: $(SOURCES) src/minicap_27.cpp
 	mkdir -p $(@D)
 	docker run --rm \
 		-a stdout -a stderr \
-		-v /media/aosp/android-8.0.0_r1:/aosp \
+		-v /media/aosp/android-8.1.0_r1:/aosp \
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
-		-e OVERRIDE_PLATFORM_SDK_VERSION=27 \
 		openstf/aosp:jdk8 /aosp.sh build aosp_mips64-eng minicap
