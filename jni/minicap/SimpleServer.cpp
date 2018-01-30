@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <string.h>
 
 SimpleServer::SimpleServer(): mFd(0) {
 }
