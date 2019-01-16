@@ -145,6 +145,7 @@ putUInt32LE(unsigned char* data, int value) {
   data[1] = (value & 0x0000FF00) >> 8;
   data[2] = (value & 0x00FF0000) >> 16;
   data[3] = (value & 0xFF000000) >> 24;
+  return 0;
 }
 
 static int
