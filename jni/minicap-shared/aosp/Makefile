@@ -606,3 +606,12 @@ libs/android-28/mips64/minicap.so: $(SOURCES) src/minicap_28.cpp
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
 		openstf/aosp:jdk8 /aosp.sh build aosp_mips64-eng minicap
+
+libs/android-qpp4/arm64-v8a/minicap.so: $(SOURCES) src/minicap_qpp4.cpp
+	mkdir -p $(@D)
+	docker run --rm \
+		-a stdout -a stderr \
+		-v /media/aosp/android-q-preview-4:/aosp \
+		-v $(this_dir):/app \
+		-v $(this_dir)$(@D):/artifacts \
+		openstf/aosp:jdk8 /aosp.sh build aosp_arm64-eng minicap OVERRIDE_PLATFORM_SDK_VERSION=qpp4

@@ -11,6 +11,7 @@ abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
 sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 pre=$(adb shell getprop ro.build.version.preview_sdk | tr -d '\r')
 rel=$(adb shell getprop ro.build.version.release | tr -d '\r')
+build_id=$(adb shell getprop ro.build.id | cut -d. -f1 | tr "[:upper:]" "[:lower:] | tr -d '\r")
 
 if [[ -n "$pre" && "$pre" > "0" ]]; then
   sdk=$(($sdk + 1))
@@ -48,8 +49,11 @@ adb push libs/$abi/$bin $dir
 # Upload the shared library
 if [ -e jni/minicap-shared/aosp/libs/android-$rel/$abi/minicap.so ]; then
   adb push jni/minicap-shared/aosp/libs/android-$rel/$abi/minicap.so $dir
-else
-  adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
+else if [ -e jni/minicap-shared/aosp/libs/android-$build_id/$abi/minicap.so ]; then
+  adb push jni/minicap-shared/aosp/libs/android-$build_id/$abi/minicap.so $dir
+  else
+    adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
+  fi
 fi
 
 # Run!
