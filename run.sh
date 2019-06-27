@@ -11,7 +11,7 @@ abi=$(adb shell getprop ro.product.cpu.abi | tr -d '\r')
 sdk=$(adb shell getprop ro.build.version.sdk | tr -d '\r')
 pre=$(adb shell getprop ro.build.version.preview_sdk | tr -d '\r')
 rel=$(adb shell getprop ro.build.version.release | tr -d '\r')
-build_id=$(adb shell getprop ro.build.id | cut -d. -f1 | tr "[:upper:]" "[:lower:] | tr -d '\r")
+build_id=$(adb shell getprop ro.build.id | cut -d. -f1 | tr '[:upper:]' '[:lower:]' | tr -d '\r')
 
 if [[ -n "$pre" && "$pre" > "0" ]]; then
   sdk=$(($sdk + 1))
