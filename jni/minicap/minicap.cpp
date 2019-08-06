@@ -251,7 +251,7 @@ main(int argc, char* argv[]) {
       break;
     case 'r':
       frameRate = atof(optarg);
-      if(frameRate == 0.0) {
+      if(frameRate <= 0.0) {
         MCINFO("Invalid framerate '%s', expecting a float > 0", optarg);
         return EXIT_FAILURE;
       } else {
