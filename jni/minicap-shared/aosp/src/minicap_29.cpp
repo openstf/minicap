@@ -340,7 +340,7 @@ private:
 
 int
 minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
-  android::sp<android::IBinder> dpy = android::SurfaceComposerClient::getBuiltInDisplay(displayId);
+  android::sp<android::IBinder> dpy = android::SurfaceComposerClient::getPhysicalDisplayToken(displayId);
 
   android::Vector<android::DisplayInfo> configs;
   android::status_t err = android::SurfaceComposerClient::getDisplayConfigs(dpy, &configs);
