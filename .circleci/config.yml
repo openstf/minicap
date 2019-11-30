@@ -1,0 +1,24 @@
+version: 2.1
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+jobs:
+  build:
+    docker:
+      - image: bitriseio/android-ndk:latest
+    steps:
+      - checkout
+      - run:
+          name: Download Dependencies
+          command: |
+              git submodule init
+              git submodule update
+      - run:
+          name: build
+          command: ndk-build
+      - store_artifacts:
+          path: libs
+          destination: libs
