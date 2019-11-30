@@ -8,7 +8,7 @@ workflows:
 jobs:
   build:
     docker:
-      - image: bitriseio/android-ndk: v2019_11_23-08_38-b1753
+      - image: bitriseio/android-ndk:v2019_11_23-08_38-b1753
     steps:
       - checkout
       - run:
