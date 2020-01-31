@@ -1,24 +1,26 @@
 {
   "name": "minicap-prebuilt",
-  "version": "2.3.0",
-  "description": "Prebuilt binaries of minicap.",
+  "version": "2.3.2",
+  "description": "Orange prebuilt binaries of minicap for OpenSTF.",
   "keywords": [
     "minicap"
   ],
   "bugs": {
-    "url": "https://github.com/openstf/minicap/issues"
+    "url": "https://github.com/Orange-OpenSource/minicap/issues"
   },
   "license": "Apache-2.0",
   "author": {
-    "name": "The OpenSTF Project",
-    "email": "contact@openstf.io",
-    "url": "https://openstf.io"
+    "name": "Orange",
+    "url": "https://opensource.orange.com/"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openstf/minicap.git"
+    "url": "https://github.com/Orange-OpenSource/minicap.git"
   },
   "scripts": {
     "prepublish": "make"
-  }
+  },
+  "files": [
+    "prebuilt"
+  ]
 }
