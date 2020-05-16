@@ -1,5 +1,5 @@
 {
-  "name": "minicap-prebuilt",
+  "name": "@devicefarmer/minicap-prebuilt",
   "version": "2.3.2",
   "description": "Prebuilt binaries of minicap.",
   "keywords": [
