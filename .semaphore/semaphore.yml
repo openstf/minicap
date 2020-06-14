@@ -1,0 +1,27 @@
+version: v1.0
+name: NPM test
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
+blocks:
+  - name: Test
+    task:
+      jobs:
+        - name: Test
+          commands:
+            - checkout
+            - git submodule init
+            - git submodule update
+            - 'wget https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O ~/android-commandline-tools.zip '
+            - mkdir -p ~/android-sdk/cmdline-tools/
+            - unzip ~/android-commandline-tools.zip -d ~/android-sdk/cmdline-tools
+            - 'export PATH=$PATH:~/android-sdk/cmdline-tools/tools/bin'
+            - yes | sdkmanager "ndk;21.3.6528147"
+            - 'export PATH=$PATH:~/android-sdk/ndk/21.3.6528147/'
+            - sem-version node 12
+            - cache restore
+            - npm install
+            - cache store
+            - npm run build --if-present
+            - npm test
