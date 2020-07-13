@@ -1,5 +1,9 @@
 # minicap
 
+# Warning
+
+This repository was superseded by https://github.com/DeviceFarmer/minicap
+
 Minicap provides a socket interface for streaming realtime screen capture data out of Android devices. It is meant to be used as a component in a larger program and is therefore not immensely useful just by itself. For example, it is being used in [STF](https://github.com/openstf/stf) for remote control.
 
 Minicap works without root if started via [ADB](http://developer.android.com/tools/help/adb.html) on SDK 28 (Android 9.0) and lower. The lowest SDK level we build for is 9 (i.e. Android 2.3). Minicap also works on Android Wear. Developer previews are, in general, supported once Google releases the source code for that release. _Only the latest Developer Preview is supported, and only until there's a stable release._ Emulators are not supported. Note that Android 3.x is not supported since those versions were never open sourced.
