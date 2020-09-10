@@ -21,6 +21,8 @@
 #include <private/gui/ComposerService.h>
 
 #include <ui/DisplayInfo.h>
+#include <ui/DisplayConfig.h>
+#include <ui/DisplayState.h>
 #include <ui/PixelFormat.h>
 #include <ui/Rect.h>
 
@@ -277,7 +279,7 @@ private:
     android::SurfaceComposerClient::Transaction t;
     t.setDisplaySurface(mVirtualDisplay, mBufferProducer);
     t.setDisplayProjection(mVirtualDisplay,
-      android::DISPLAY_ORIENTATION_0, layerStackRect, visibleRect);
+      android::ui::ROTATION_0, layerStackRect, visibleRect);
     t.setDisplayLayerStack(mVirtualDisplay, 0); // default stack
     t.apply();
 
@@ -340,36 +342,44 @@ private:
 
 int
 minicap_try_get_display_info(int32_t displayId, Minicap::DisplayInfo* info) {
+  android::status_t err;
   android::sp<android::IBinder> dpy = android::SurfaceComposerClient::getPhysicalDisplayToken(displayId);
   if(!dpy) {
     MCINFO("could not get display for id: %d, using internal display", displayId);
     dpy = android::SurfaceComposerClient::getInternalDisplayToken();
   }
 
-  android::Vector<android::DisplayInfo> configs;
-  android::status_t err = android::SurfaceComposerClient::getDisplayConfigs(dpy, &configs);
-
+  android::DisplayInfo dinfo;
+  err = android::SurfaceComposerClient::getDisplayInfo(dpy, &dinfo);
   if (err != android::NO_ERROR) {
     MCERROR("SurfaceComposerClient::getDisplayInfo() failed: %s (%d)\n", error_name(err), err);
     return err;
   }
 
-  int activeConfig = android::SurfaceComposerClient::getActiveConfig(dpy);
-  if(static_cast<size_t>(activeConfig) >= configs.size()) {
-      MCERROR("Active config %d not inside configs (size %zu)\n", activeConfig, configs.size());
-      return android::BAD_VALUE;
+  android::ui::DisplayState dstate;
+  err = android::SurfaceComposerClient::getDisplayState(dpy, &dstate);
+  if (err !=  android::NO_ERROR) {
+    MCERROR("SurfaceComposerClient:::getDisplayState() failed: %s (%d)\n", error_name(err), err);
+    return err;
   }
-  android::DisplayInfo dinfo = configs[activeConfig];
 
-  info->width = dinfo.w;
-  info->height = dinfo.h;
-  info->orientation = dinfo.orientation;
-  info->fps = dinfo.fps;
+  android::DisplayConfig dconfig;
+  err = android::SurfaceComposerClient::getActiveDisplayConfig(dpy, &dconfig);
+  if (err !=  android::NO_ERROR) {
+    MCERROR("SurfaceComposerClient::getActiveDisplayConfig() failed: %s (%d)\n", error_name(err), err);
+    return err;
+  }
+
+  const android::ui::Size& viewport = dstate.viewport;
+  info->width = viewport.getWidth();
+  info->height = viewport.getHeight();
+  info->orientation = android::ui::toRotationInt(dstate.orientation);
+  info->fps = dconfig.refreshRate;
   info->density = dinfo.density;
-  info->xdpi = dinfo.xdpi;
-  info->ydpi = dinfo.ydpi;
+  info->xdpi = dconfig.xDpi;
+  info->ydpi = dconfig.yDpi;
   info->secure = dinfo.secure;
-  info->size = sqrt(pow(dinfo.w / dinfo.xdpi, 2) + pow(dinfo.h / dinfo.ydpi, 2));
+  info->size = sqrt(pow(viewport.getWidth() / dconfig.xDpi, 2) + pow(viewport.getWidth() / dconfig.yDpi, 2));
 
   return 0;
 }
