@@ -1,22 +1,22 @@
 {
   "name": "@devicefarmer/minicap-prebuilt",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Prebuilt binaries of minicap.",
   "keywords": [
     "minicap"
   ],
   "bugs": {
-    "url": "https://github.com/openstf/minicap/issues"
+    "url": "https://github.com/DeviceFarmer/minicap/issues"
   },
   "license": "Apache-2.0",
   "author": {
-    "name": "The OpenSTF Project",
-    "email": "contact@openstf.io",
-    "url": "https://openstf.io"
+    "name": "DeviceFarmer",
+    "email": "support@devicefarmer.com",
+    "url": "https://devicefarmer.github.io"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/openstf/minicap.git"
+    "url": "https://github.com/DeviceFarmer/minicap.git"
   },
   "scripts": {
     "prepublish": "make"
