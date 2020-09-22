@@ -1,14 +1,10 @@
 version: v1.0
-name: NPM test
-agent:
-  machine:
-    type: e1-standard-2
-    os_image: ubuntu1804
+name: Publish
 blocks:
-  - name: Test
+  - name: Publish
     task:
       jobs:
-        - name: Test
+        - name: NPM publish
           commands:
             - checkout
             - git submodule init
@@ -23,10 +19,11 @@ blocks:
             - cache restore
             - npm install
             - cache store
-            - npm run build --if-present
-            - npm test
-promotions:
-  - name: NPM publish
-    pipeline_file: publish.yml
-    auto_promote:
-      when: (branch = 'master' OR tag =~ '.*') AND result = 'passed'
+            - npm install
+            - npm publish --access public
+      secrets:
+        - name: npmjs
+agent:
+  machine:
+    type: e1-standard-2
+    os_image: ubuntu1804
