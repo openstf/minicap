@@ -27,9 +27,7 @@ import java.nio.ByteOrder
  */
 @ExperimentalUnsignedTypes
 class MinicapClientOutput(
-    private val socket: LocalSocket,
-    var screenSize: Size = Size(0, 0),
-    var targetSize: Size = Size(0, 0)
+    private val socket: LocalSocket
 ) :
     DisplayOutput() {
     companion object {
@@ -41,7 +39,7 @@ class MinicapClientOutput(
     /**
      * Sends the banner required at connection time
      */
-    fun sendBanner() {
+    fun sendBanner(screenSize: Size, targetSize: Size) {
         val byteArray = ByteArray(BANNER_SIZE)
         ByteBuffer.wrap(byteArray).apply {
             order(ByteOrder.LITTLE_ENDIAN)

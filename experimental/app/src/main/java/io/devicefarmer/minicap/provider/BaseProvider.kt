@@ -57,9 +57,6 @@ abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listene
             field = value
         }
 
-    /**
-     *
-     */
     abstract fun screenshot(printer: PrintStream)
     abstract fun getScreenSize(): Size
 
@@ -78,9 +75,7 @@ abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listene
 
     override fun onConnection(socket: LocalSocket) {
         clientOutput = MinicapClientOutput(socket).apply {
-            screenSize = getScreenSize()
-            targetSize = getTargetSize()
-            sendBanner()
+            sendBanner(getScreenSize(),getTargetSize())
         }
         init(clientOutput)
     }

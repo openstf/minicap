@@ -24,12 +24,12 @@ import android.util.Size
 @SuppressLint("PrivateApi")
 object DisplayManagerGlobal {
     private var displayManager: Any?
-    private var CLASS: Class<*>?
+    private var clazz: Class<*>?
 
     init {
         try {
-            CLASS = Class.forName("android.hardware.display.DisplayManagerGlobal")
-            val getInstance = CLASS!!.getMethod("getInstance")
+            clazz = Class.forName("android.hardware.display.DisplayManagerGlobal")
+            val getInstance = clazz!!.getMethod("getInstance")
             displayManager = getInstance.invoke(null)
         } catch (e: ClassNotFoundException) {
             throw AssertionError(e)
