@@ -4,6 +4,7 @@
 set -exo pipefail
 
 # Build project
+experimental/gradlew -p experimental assembleDebug
 ndk-build NDK_DEBUG=1 1>&2
 
 # Figure out which ABI and SDK the device has
@@ -22,6 +23,8 @@ if (($sdk >= 16)); then
 else
   bin=minicap-nopie
 fi
+
+apk="app_process /system/bin io.devicefarmer.minicap.Main"
 
 args=
 if [ "$1" = "autosize" ]; then
@@ -48,12 +51,16 @@ adb push libs/$abi/$bin $dir
 # Upload the shared library
 if [ -e jni/minicap-shared/aosp/libs/android-$rel/$abi/minicap.so ]; then
   adb push jni/minicap-shared/aosp/libs/android-$rel/$abi/minicap.so $dir
+  adb shell LD_LIBRARY_PATH=$dir $dir/$bin $args "$@"
 else
-  adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
+  if [ -e jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so ]; then
+    adb push jni/minicap-shared/aosp/libs/android-$sdk/$abi/minicap.so $dir
+    adb shell LD_LIBRARY_PATH=$dir $dir/$bin $args "$@"
+  else
+    adb push experimental/app/build/outputs/apk/debug/minicap-debug.apk $dir
+    adb shell CLASSPATH=$dir/minicap-debug.apk $apk $args "$@"
+  fi
 fi
-
-# Run!
-adb shell LD_LIBRARY_PATH=$dir $dir/$bin $args "$@"
 
 # Clean up
 adb shell rm -r $dir
