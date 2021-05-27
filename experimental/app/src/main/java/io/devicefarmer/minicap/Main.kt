@@ -18,8 +18,7 @@ package io.devicefarmer.minicap
 import android.os.Looper
 import android.util.Size
 import io.devicefarmer.minicap.provider.SurfaceProvider
-import org.slf4j.LoggerFactory
-import java.io.PrintStream
+import kotlin.math.roundToInt
 import kotlin.system.exitProcess
 
 
@@ -58,6 +57,7 @@ class Main {
             provider = if (params.projection == null) {
                 SurfaceProvider()
             } else {
+                params.projection.forceAspectRatio()
                 SurfaceProvider(
                     Size(
                         params.projection.targetSize.width,
@@ -106,9 +106,18 @@ class Main {
 }
 
 data class Projection(
-    val realSize: Size, val targetSize: Size,
+    val realSize: Size, var targetSize: Size,
     val orientation: Int
 ) {
+    fun forceAspectRatio() {
+        val aspect = realSize.width.toFloat() / realSize.height.toFloat()
+        targetSize = if (targetSize.height > targetSize.width / aspect) {
+            Size(targetSize.width, ((targetSize.width / aspect)).roundToInt())
+        } else {
+            Size((targetSize.height * aspect).roundToInt(), targetSize.height)
+        }
+    }
+
     override fun toString(): String =
         "${realSize.width}x${realSize.height}@${targetSize.width}x${targetSize.height}/${orientation}"
 }
