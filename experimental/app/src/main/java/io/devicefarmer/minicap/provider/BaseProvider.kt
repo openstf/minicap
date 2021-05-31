@@ -65,8 +65,8 @@ abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listene
 
     fun init(out: DisplayOutput) {
         imageReader = ImageReader.newInstance(
-            getScreenSize().width,
-            getScreenSize().height,
+            getTargetSize().width,
+            getTargetSize().height,
             PixelFormat.RGBA_8888,
             2
         )
@@ -111,6 +111,10 @@ abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listene
                 Bitmap.Config.ARGB_8888
             ).apply {
                 copyPixelsFromBuffer(buffer)
+            }.run {
+                //the image need to be cropped
+                Bitmap.createBitmap(this, 0, 0, getTargetSize().width, getTargetSize().height)
+            }.apply {
                 compress(Bitmap.CompressFormat.JPEG, q, out)
             }
         }
