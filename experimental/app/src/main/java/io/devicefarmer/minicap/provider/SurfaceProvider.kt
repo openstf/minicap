@@ -33,8 +33,8 @@ import kotlin.system.exitProcess
  * Provides screen images using [SurfaceControl]. This is pretty similar to the native version
  * of minicap but here it is done at a higher level making things a bit easier.
  */
-class SurfaceProvider(targetSize: Size) : BaseProvider(targetSize) {
-    constructor() : this(currentScreenSize())
+class SurfaceProvider(targetSize: Size, orientation: Int) : BaseProvider(targetSize, orientation) {
+    constructor() : this(currentScreenSize(), currentRotation())
 
     companion object {
         private fun currentScreenSize(): Size {
@@ -42,6 +42,8 @@ class SurfaceProvider(targetSize: Size) : BaseProvider(targetSize) {
                 Size(this.size.width, this.size.height)
             }
         }
+
+        private fun currentRotation(): Int = currentDisplayInfo().rotation
 
         private fun currentDisplayInfo(): DisplayInfo {
             return DisplayManagerGlobal.getDisplayInfo(0)
@@ -53,9 +55,8 @@ class SurfaceProvider(targetSize: Size) : BaseProvider(targetSize) {
 
     val displayInfo: DisplayInfo = currentDisplayInfo()
 
-    override fun getScreenSize(): Size {
-        return displayInfo.size
-    }
+    override fun getScreenSize(): Size = displayInfo.size
+
 
     override fun screenshot(printer: PrintStream) {
         init(ScreenshotOutput(printer))

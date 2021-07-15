@@ -73,7 +73,7 @@ object SurfaceControl {
 
     fun setDisplayProjection(
         displayToken: IBinder?,
-        orientation: Int,
+        rotation: Int, //Rotation0 = 0, Rotation90 = 1, Rotation180 = 2, Rotation270 = 3
         layerStackRect: Rect?,
         displayRect: Rect?
     ) {
@@ -82,7 +82,7 @@ object SurfaceControl {
                 "setDisplayProjection", IBinder::class.java,
                 Int::class.javaPrimitiveType, Rect::class.java, Rect::class.java
             )
-                .invoke(null, displayToken, orientation, layerStackRect, displayRect)
+                .invoke(null, displayToken, rotation, layerStackRect, displayRect)
         } catch (e: Exception) {
             logAndThrow(e)
         }

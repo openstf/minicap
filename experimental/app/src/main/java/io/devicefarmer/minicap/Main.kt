@@ -62,7 +62,8 @@ class Main {
                     Size(
                         params.projection.targetSize.width,
                         params.projection.targetSize.height
-                    )
+                    ),
+                    angleToRotation(params.projection.rotation)
                 )
             }
             provider.quality = params.quality
@@ -105,9 +106,18 @@ class Main {
     }
 }
 
+private fun angleToRotation(value: Int): Int =
+    when(value) {
+        0   -> 0
+        90  -> 1
+        180 -> 2
+        270 -> 3
+        else -> throw IllegalStateException("Invalid rotation")
+    }
+
 data class Projection(
     val realSize: Size, var targetSize: Size,
-    val orientation: Int
+    val rotation: Int
 ) {
     fun forceAspectRatio() {
         val aspect = realSize.width.toFloat() / realSize.height.toFloat()
@@ -119,7 +129,7 @@ data class Projection(
     }
 
     override fun toString(): String =
-        "${realSize.width}x${realSize.height}@${targetSize.width}x${targetSize.height}/${orientation}"
+        "${realSize.width}x${realSize.height}@${targetSize.width}x${targetSize.height}/${rotation}"
 }
 
 class Parameters private constructor(
