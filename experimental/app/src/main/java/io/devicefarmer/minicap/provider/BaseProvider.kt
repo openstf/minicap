@@ -36,7 +36,7 @@ import java.nio.ByteBuffer
  * and sends the results to an output (could be a file for screenshot, or a minicap client receiving the
  * jpeg stream)
  */
-abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listener,
+abstract class BaseProvider(private val targetSize: Size, val rotation: Int) : SimpleServer.Listener,
     ImageReader.OnImageAvailableListener {
 
     companion object {
@@ -60,7 +60,7 @@ abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listene
     abstract fun screenshot(printer: PrintStream)
     abstract fun getScreenSize(): Size
 
-    fun getTargetSize(): Size = targetSize
+    fun getTargetSize(): Size = if(rotation%2 != 0) Size(targetSize.height, targetSize.width) else targetSize
     fun getImageReader(): ImageReader = imageReader
 
     fun init(out: DisplayOutput) {
@@ -75,7 +75,7 @@ abstract class BaseProvider(private val targetSize: Size) : SimpleServer.Listene
 
     override fun onConnection(socket: LocalSocket) {
         clientOutput = MinicapClientOutput(socket).apply {
-            sendBanner(getScreenSize(),getTargetSize())
+            sendBanner(getScreenSize(),getTargetSize(),rotation)
         }
         init(clientOutput)
     }

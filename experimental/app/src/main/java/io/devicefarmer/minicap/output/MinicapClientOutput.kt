@@ -39,18 +39,18 @@ class MinicapClientOutput(
     /**
      * Sends the banner required at connection time
      */
-    fun sendBanner(screenSize: Size, targetSize: Size) {
+    fun sendBanner(screenSize: Size, targetSize: Size, rotation: Int ) {
         val byteArray = ByteArray(BANNER_SIZE)
         ByteBuffer.wrap(byteArray).apply {
             order(ByteOrder.LITTLE_ENDIAN)
             put(BANNER_VERSION.toByte())
             put(BANNER_SIZE.toByte())
             putInt(android.os.Process.myPid()) //PID
-            putInt(screenSize.width)//Width
-            putInt(screenSize.height)//Height
-            putInt(targetSize.width)//resized Width
-            putInt(targetSize.height)//resized height
-            put(0.toByte()) //orientation
+            putInt(screenSize.width)
+            putInt(screenSize.height)
+            putInt(targetSize.width)
+            putInt(targetSize.height)
+            put(rotation.toByte()) //as per libui ui::Rotation enum
             put(QUIRK_ALWAYS_UPRIGHT.toByte()) //quirk
         }
         with(socket.outputStream) {
