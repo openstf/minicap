@@ -49,6 +49,10 @@ all: \
 	libs/android-28/x86/minicap.so \
 	libs/android-28/x86_64/minicap.so \
 	libs/android-29/arm64-v8a/minicap.so \
+	libs/android-31/armeabi-v7a/minicap.so \
+	libs/android-31/arm64-v8a/minicap.so \
+	libs/android-31/x86/minicap.so \
+	libs/android-31/x86_64/minicap.so \	
 
 libs/android-9/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_9.cpp
 	mkdir -p $(@D)
@@ -616,3 +620,39 @@ libs/android-29/arm64-v8a/minicap.so: $(SOURCES) src/minicap_29.cpp
 		-v $(this_dir):/app \
 		-v $(this_dir)$(@D):/artifacts \
 		openstf/aosp:jdk8 /aosp.sh build aosp_arm64-eng minicap
+
+libs/android-31/armeabi-v7a/minicap.so: $(SOURCES) src/minicap_31.cpp
+	mkdir -p $(@D)
+	docker run --rm \
+		-a stdout -a stderr \
+		-v /media/aosp/android-12.0.0_r2:/aosp \
+		-v $(this_dir):/app \
+		-v $(this_dir)$(@D):/artifacts \
+		openstf/aosp:jdk8 /aosp.sh build aosp_arm-eng minicap
+
+libs/android-31/arm64-v8a/minicap.so: $(SOURCES) src/minicap_31.cpp
+	mkdir -p $(@D)
+	docker run --rm \
+		-a stdout -a stderr \
+		-v /media/aosp/android-12.0.0_r2:/aosp \
+		-v $(this_dir):/app \
+		-v $(this_dir)$(@D):/artifacts \
+		openstf/aosp:jdk8 /aosp.sh build aosp_arm64-eng minicap
+
+libs/android-31/x86/minicap.so: $(SOURCES) src/minicap_31.cpp
+	mkdir -p $(@D)
+	docker run --rm \
+		-a stdout -a stderr \
+		-v /media/aosp/android-12.0.0_r2:/aosp \
+		-v $(this_dir):/app \
+		-v $(this_dir)$(@D):/artifacts \
+		openstf/aosp:jdk8 /aosp.sh build aosp_x86-eng minicap
+
+libs/android-31/x86_64/minicap.so: $(SOURCES) src/minicap_31.cpp
+	mkdir -p $(@D)
+	docker run --rm \
+		-a stdout -a stderr \
+		-v /media/aosp/android-12.0.0_r2:/aosp \
+		-v $(this_dir):/app \
+		-v $(this_dir)$(@D):/artifacts \
+		openstf/aosp:jdk8 /aosp.sh build aosp_x86_64-eng minicap
