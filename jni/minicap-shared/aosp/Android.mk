@@ -7,6 +7,8 @@ LOCAL_MODULE_TAGS := optional
 
 ifneq ($(OVERRIDE_PLATFORM_SDK_VERSION),)
 LOCAL_SRC_FILES += src/minicap_$(OVERRIDE_PLATFORM_SDK_VERSION).cpp
+else ifeq ($(PLATFORM_SDK_VERSION),31)
+LOCAL_SRC_FILES += src/minicap_31.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),30)
 LOCAL_SRC_FILES += src/minicap_30.cpp
 else ifeq ($(PLATFORM_SDK_VERSION),29)
