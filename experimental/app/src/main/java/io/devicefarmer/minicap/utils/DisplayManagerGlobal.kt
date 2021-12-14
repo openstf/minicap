@@ -54,4 +54,13 @@ object DisplayManagerGlobal {
             throw AssertionError(e)
         }
     }
+
+    fun getDisplayIds(): IntArray {
+        return try {
+            displayManager!!.javaClass.getMethod("getDisplayIds")
+                .invoke(displayManager) as IntArray
+        } catch (e: Exception) {
+            throw AssertionError(e)
+        }
+    }
 }

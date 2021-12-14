@@ -24,6 +24,7 @@ import android.util.Size
 import io.devicefarmer.minicap.output.DisplayOutput
 import io.devicefarmer.minicap.output.MinicapClientOutput
 import io.devicefarmer.minicap.SimpleServer
+import io.devicefarmer.minicap.utils.DisplayManagerGlobal
 import org.slf4j.LoggerFactory
 import java.io.OutputStream
 import java.io.PrintStream
@@ -36,7 +37,7 @@ import java.nio.ByteBuffer
  * and sends the results to an output (could be a file for screenshot, or a minicap client receiving the
  * jpeg stream)
  */
-abstract class BaseProvider(private val targetSize: Size, val rotation: Int) : SimpleServer.Listener,
+abstract class BaseProvider(private val displayId: Int, private val targetSize: Size, val rotation: Int) : SimpleServer.Listener,
     ImageReader.OnImageAvailableListener {
 
     companion object {
