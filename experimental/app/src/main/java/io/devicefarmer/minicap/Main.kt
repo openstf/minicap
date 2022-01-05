@@ -45,6 +45,7 @@ class Main {
                     Pair(p, elem)
                 } else {
                     when (lastKey) {
+                        "-d" -> p.displayId(elem.toInt())
                         "-n" -> p.socket(elem)
                         "-P" -> p.projection(elem)
                         "-Q" -> p.quality(elem.toInt())
@@ -55,10 +56,11 @@ class Main {
             }.first.build()
 
             provider = if (params.projection == null) {
-                SurfaceProvider()
+                SurfaceProvider(params.displayId)
             } else {
                 params.projection.forceAspectRatio()
                 SurfaceProvider(
+                    params.displayId,
                     Size(
                         params.projection.targetSize.width,
                         params.projection.targetSize.height
@@ -138,7 +140,8 @@ class Parameters private constructor(
     val socket: String,
     val quality: Int,
     val displayInfo: Boolean,
-    val frameRate: Float
+    val frameRate: Float,
+    val displayId: Int
 ) {
     data class Builder(
         var projection: Projection? = null,
@@ -146,7 +149,8 @@ class Parameters private constructor(
         var socket: String = "minicap",
         var quality: Int = 100,
         var displayInfo: Boolean = false,
-        var frameRate: Float = Float.MAX_VALUE
+        var frameRate: Float = Float.MAX_VALUE,
+        var displayId: Int = 0
     ) {
         //TODO make something more robust
         fun projection(p: String) = apply {
@@ -165,6 +169,7 @@ class Parameters private constructor(
         fun quality(value: Int) = apply { this.quality = value }
         fun displayInfo(enabled: Boolean) = apply { this.displayInfo = enabled }
         fun frameRate(value: Float) = apply { this.frameRate = value }
-        fun build() = Parameters(projection, screenshot, socket, quality, displayInfo, frameRate)
+        fun displayId(value: Int) = apply { this.displayId = value }
+        fun build() = Parameters(projection, screenshot, socket, quality, displayInfo, frameRate, displayId)
     }
 }
