@@ -15,6 +15,7 @@ blocks:
             - 'export PATH=$PATH:~/android-sdk/cmdline-tools/tools/bin'
             - yes | sdkmanager "ndk;21.3.6528147"
             - 'export PATH=$PATH:~/android-sdk/ndk/21.3.6528147/'
+            - 'export ANDROID_SDK_ROOT=~/android-sdk'
             - sem-version node 12
             - cache restore
             - npm install
