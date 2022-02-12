@@ -1,6 +1,7 @@
 /.env
 /.gitmodules
 /.npmignore
+/.semaphore
 /*.tgz
 /build-remote.sh
 /CONTRIBUTING.md
@@ -14,3 +15,4 @@
 /run.sh
 /temp/
 /yarn-error.log
+/experimental
